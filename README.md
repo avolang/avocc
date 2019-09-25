@@ -22,8 +22,9 @@ some support may be available.
 DIGIT := /* 0-9 */
 UNICODE_SYMBOL := /* All characters except <{([])}> and space*/
 UNICODE := /* All unicode characters */
+UNICODE_NO_NEWLINE := /* All unicode characters except new line */
 
-NIL := nil
+NIL := 'nil'
 INT_LITERAL := { '0x' | '0b' | '0o' } [ DIGIT ] { 'i32' | 'i64' }
 FLO_LITERAL := { '-' } [ DIGIT ] { '.' } [ DIGIT ] { 'f32' | 'f64' }
 BOL_LITERAL := true | false
