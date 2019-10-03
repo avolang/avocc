@@ -3,7 +3,7 @@
 
 #include <math.h>   // fabs()
 #include <stdio.h>  // printf(), fprintf()
-#include <string.h> // strcmp()
+#include <string.h> // strcmp(), strlen()
 #include <time.h>   // clock_t
 
 // Track of the number of passes and failures
@@ -59,8 +59,8 @@ __attribute__((unused)) static int tfails = 0;
       ++tfails;                                                                \
       printf("%s:%d error, some assertions may not be executed! \n", __FILE__, \
              __LINE__);                                                        \
+      return;                                                                    \
     }                                                                          \
-    return;                                                                    \
   } while (0)
 
 // Prototype to assert equal
@@ -89,5 +89,10 @@ __attribute__((unused)) static int tfails = 0;
                   fabs((double)(a) - (double)(b)) ==                           \
                       fabs((double)(a) - (double)(b)),                         \
               (double)(a), (double)(b), "%f")
+
+// Loads a buffer into the specified source
+#define load_string(src, s) do {\
+  avoc_source_init(src, NULL, s, strlen(s));\
+} while(0)
 
 #endif /* TESTS_H */
