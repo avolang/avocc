@@ -13,6 +13,9 @@ typedef struct _avoc_source {
   int cur_cp; // Current code point
   int nxt_cp; // Next code point
 
+  long cur_cp_pos; // Current codepoint position
+  long nxt_cp_pos; // Next codepoint position
+
   size_t row;
   size_t col;
   char *name;

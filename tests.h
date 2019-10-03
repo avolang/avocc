@@ -47,8 +47,11 @@ __attribute__((unused)) static int tfails = 0;
   do {                                                                         \
     ++ttotal;                                                                  \
     if (!(check)) {                                                            \
+      if (tfails == 0) {                                                       \
+        printf("\n");                                                          \
+      }                                                                        \
       ++tfails;                                                                \
-      printf("%s:%d error \n", __FILE__, __LINE__);                            \
+      printf("%s:%d: error \n", __FILE__, __LINE__);                           \
     }                                                                          \
   } while (0)
 
@@ -56,10 +59,13 @@ __attribute__((unused)) static int tfails = 0;
   do {                                                                         \
     ++ttotal;                                                                  \
     if (!(check)) {                                                            \
+      if (tfails == 0) {                                                       \
+        printf("\n");                                                          \
+      }                                                                        \
       ++tfails;                                                                \
-      printf("%s:%d error, some assertions may not be executed! \n", __FILE__, \
-             __LINE__);                                                        \
-      return;                                                                    \
+      printf("%s:%d: error, some assertions may not be executed! \n",          \
+             __FILE__, __LINE__);                                              \
+      return;                                                                  \
     }                                                                          \
   } while (0)
 
@@ -68,8 +74,11 @@ __attribute__((unused)) static int tfails = 0;
   do {                                                                         \
     ++ttotal;                                                                  \
     if (!(equality)) {                                                         \
+      if (tfails == 0) {                                                       \
+        printf("\n");                                                          \
+      }                                                                        \
       ++tfails;                                                                \
-      printf("%s:%d (" format " != " format ")\n", __FILE__, __LINE__, (a),    \
+      printf("%s:%d: (" format " != " format ")\n", __FILE__, __LINE__, (a),   \
              (b));                                                             \
     }                                                                          \
   } while (0)
@@ -91,8 +100,9 @@ __attribute__((unused)) static int tfails = 0;
               (double)(a), (double)(b), "%f")
 
 // Loads a buffer into the specified source
-#define load_string(src, s) do {\
-  avoc_source_init(src, NULL, s, strlen(s));\
-} while(0)
+#define load_string(src, s)                                                    \
+  do {                                                                         \
+    avoc_source_init(src, NULL, s, strlen(s));                                 \
+  } while (0)
 
 #endif /* TESTS_H */

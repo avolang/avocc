@@ -19,6 +19,8 @@ void avoc_source_init(avoc_source *src, const char *name, const char *buf_data,
   src->buf_pos = 0L;
   src->cur_cp = 0L;
   src->nxt_cp = 0L;
+  src->cur_cp_pos = 0L;
+  src->nxt_cp_pos = 0L;
   src->row = 0L;
   src->col = 0L;
 
@@ -114,20 +116,22 @@ static int utf8_next_cp(avoc_source *src) {
   return UTF8_ERROR;
 }
 
-// TODO(cedmundo): Track the current position (not the buffer cursor position)
 int avoc_source_fwd(avoc_source *src) {
   assert(src != NULL);
   // We count two-by-two cps, so we need an extra item
-  if (src->buf_pos >= src->buf_len+1) {
+  if (src->buf_pos > src->buf_len) {
     src->cur_cp = UTF8_END;
     return UTF8_END;
   }
 
+  src->cur_cp_pos = src->nxt_cp_pos;
   if (src->buf_pos == 0L) {
     src->cur_cp = utf8_next_cp(src);
+    src->nxt_cp_pos = src->buf_pos;
     src->nxt_cp = utf8_next_cp(src);
   } else {
     src->cur_cp = src->nxt_cp;
+    src->nxt_cp_pos = src->buf_pos;
     src->nxt_cp = utf8_next_cp(src);
   }
 
