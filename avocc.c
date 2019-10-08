@@ -21,8 +21,8 @@ void avoc_source_init(avoc_source *src, const char *name, const char *buf_data,
   src->nxt_cp = 0L;
   src->cur_cp_pos = 0L;
   src->nxt_cp_pos = 0L;
-  src->row = 0L;
-  src->col = 0L;
+  src->row = 1L;
+  src->col = 1L;
 
   if (name != NULL) {
     size_t name_len = strlen(name)+1;
@@ -133,6 +133,13 @@ int avoc_source_fwd(avoc_source *src) {
     src->cur_cp = src->nxt_cp;
     src->nxt_cp_pos = src->buf_pos;
     src->nxt_cp = utf8_next_cp(src);
+  }
+
+  if (src->cur_cp == '\n') {
+    src->row ++;
+    src->col = 1L;
+  } else {
+    src->col ++;
   }
 
   return src->cur_cp;

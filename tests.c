@@ -13,8 +13,8 @@ void test_source_init_free() {
   assert_eq(src0.nxt_cp, 0);
   assert_eql(src0.cur_cp_pos, 0L);
   assert_eql(src0.nxt_cp_pos, 0L);
-  assert_eql(src0.col, 0L);
-  assert_eql(src0.row, 0L);
+  assert_eql(src0.col, 1L);
+  assert_eql(src0.row, 1L);
   assert_okb(src0.name == NULL);
 
   avoc_source src1;
@@ -28,8 +28,8 @@ void test_source_init_free() {
   assert_eq(src1.nxt_cp, 0);
   assert_eql(src1.cur_cp_pos, 0L);
   assert_eql(src1.nxt_cp_pos, 0L);
-  assert_eql(src1.col, 0L);
-  assert_eql(src1.row, 0L);
+  assert_eql(src1.col, 1L);
+  assert_eql(src1.row, 1L);
 
   avoc_source_free(&src1);
   assert_okb(src0.buf_data == NULL);
@@ -180,10 +180,28 @@ void test_source_move_fwd_utf8() {
   avoc_source_free(&src);
 }
 
+void test_source_move_fwd_newl() {
+  avoc_source src;
+
+  load_string(&src, "A\nB");
+  assert_eql(src.row, 1L);
+  assert_eql(src.col, 1L);
+
+  avoc_source_fwd(&src);
+  assert_eql(src.row, 1L);
+  assert_eql(src.col, 2L);
+
+  avoc_source_fwd(&src);
+  assert_eql(src.row, 2L);
+  assert_eql(src.col, 1L);
+  avoc_source_free(&src);
+}
+
 int main(){
   trun("test_source_init_free", test_source_init_free);
   trun("test_source_move_fwd_ascii", test_source_move_fwd_ascii);
   trun("test_source_move_fwd_utf8", test_source_move_fwd_utf8);
+  trun("test_source_move_fwd_newl", test_source_move_fwd_newl);
   tresults();
   return 0;
 }

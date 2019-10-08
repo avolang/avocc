@@ -3,15 +3,15 @@
 
 #include <stddef.h> // size_t
 
-// Cointains the state of a source code buffer
+// Contains the state of a source code buffer
 typedef struct _avoc_source {
   unsigned char *buf_data;
   size_t buf_len; // Buffer total length
   size_t buf_pos; // Cursor position (two by two code points)
   size_t cur_pos; // Current code point position
 
-  int cur_cp; // Current code point
-  int nxt_cp; // Next code point
+  int cur_cp; // Current code point value
+  int nxt_cp; // Next code point value
 
   long cur_cp_pos; // Current codepoint position
   long nxt_cp_pos; // Next codepoint position
