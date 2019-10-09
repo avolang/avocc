@@ -1,4 +1,5 @@
 # Avocado
+[![CircleCI](https://circleci.com/gh/avolang/avocc/tree/master.svg?style=svg)](https://circleci.com/gh/avolang/avocc/tree/master)
 
 Avocado is a general propouse, functional, static and strong typed
 programming language inspired and based on LISP family. Avocado is
