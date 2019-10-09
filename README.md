@@ -19,6 +19,7 @@ some support may be available.
 ### Lex of avocado
 
 ```
+COLON := ':'
 DIGIT := /* 0-9 */
 NEW_LINE := /* New line character */
 UNICODE_SYMBOL := /* All characters except <{([])}> and space*/

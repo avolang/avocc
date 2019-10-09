@@ -197,11 +197,503 @@ void test_source_move_fwd_newl() {
   avoc_source_free(&src);
 }
 
+void test_token_init() {
+  avoc_token token;
+  avoc_token_init(&token);
+  assert_eq(token.type, 0);
+  assert_eq(token.lit_type, 0);
+  assert_eql(token.start_pos, 0L);
+  assert_eql(token.length, 0L);
+}
+
+void test_token_next_singlechar() {
+  avoc_source src;
+  avoc_status status;
+  avoc_token token;
+
+  load_string(&src, "");
+  status = avoc_next_token(&src, &token);
+  assert_okb(status == OK);
+  assert_eq(token.type, TOKEN_EOF);
+  avoc_source_free(&src);
+
+  load_string(&src, "\n");
+  status = avoc_next_token(&src, &token);
+  assert_okb(status == OK);
+  assert_eq(token.type, TOKEN_EOL);
+  avoc_source_free(&src);
+
+  load_string(&src, ":");
+  status = avoc_next_token(&src, &token);
+  assert_okb(status == OK);
+  assert_eq(token.type, TOKEN_COLON);
+  assert_eql(token.start_pos, 0L);
+  assert_eql(token.length, 1L);
+  avoc_source_free(&src);
+
+  load_string(&src, "<[(");
+  status = avoc_next_token(&src, &token);
+  assert_okb(status == OK);
+  assert_eq(token.type, TOKEN_LSTART);
+  assert_eql(token.start_pos, 0L);
+  assert_eql(token.length, 1L);
+
+  status = avoc_next_token(&src, &token);
+  assert_okb(status == OK);
+  assert_eq(token.type, TOKEN_LSTART);
+  assert_eql(token.start_pos, 1L);
+  assert_eql(token.length, 1L);
+
+  status = avoc_next_token(&src, &token);
+  assert_okb(status == OK);
+  assert_eq(token.type, TOKEN_LSTART);
+  assert_eql(token.start_pos, 2L);
+  assert_eql(token.length, 1L);
+  avoc_source_free(&src);
+
+  load_string(&src, ")]>");
+  status = avoc_next_token(&src, &token);
+  assert_okb(status == OK);
+  assert_eq(token.type, TOKEN_LEND);
+  assert_eql(token.start_pos, 0L);
+  assert_eql(token.length, 1L);
+
+  status = avoc_next_token(&src, &token);
+  assert_okb(status == OK);
+  assert_eq(token.type, TOKEN_LEND);
+  assert_eql(token.start_pos, 1L);
+  assert_eql(token.length, 1L);
+
+  status = avoc_next_token(&src, &token);
+  assert_okb(status == OK);
+  assert_eq(token.type, TOKEN_LEND);
+  assert_eql(token.start_pos, 2L);
+  assert_eql(token.length, 1L);
+  avoc_source_free(&src);
+}
+
+void test_token_next_comments() {
+  avoc_source src;
+  avoc_status status;
+  avoc_token token;
+
+  load_string(&src, "; this is a line comment\n");
+  status = avoc_next_token(&src, &token);
+  assert_okb(status == OK);
+  assert_eq(token.type, TOKEN_COMMENT);
+  assert_eql(token.start_pos, 0L);
+  assert_eql(token.length, 25L);
+  avoc_source_free(&src);
+
+  load_string(&src, ";; this is a \n block comment ;;\n");
+  status = avoc_next_token(&src, &token);
+  assert_okb(status == OK);
+  assert_eq(token.type, TOKEN_COMMENT);
+  assert_eql(token.start_pos, 0L);
+  assert_eql(token.length, 31L);
+  avoc_source_free(&src);
+
+  load_string(&src, ";; a ;; ;; b ;; ;c\n");
+  status = avoc_next_token(&src, &token);
+  assert_okb(status == OK);
+  assert_eq(token.type, TOKEN_COMMENT);
+  assert_eql(token.start_pos, 0L);
+  assert_eql(token.length, 7L);
+
+  status = avoc_next_token(&src, &token);
+  assert_okb(status == OK);
+  assert_eq(token.type, TOKEN_COMMENT);
+  assert_eql(token.start_pos, 8L);
+  assert_eql(token.length, 7L);
+
+  status = avoc_next_token(&src, &token);
+  assert_okb(status == OK);
+  assert_eq(token.type, TOKEN_COMMENT);
+  assert_eql(token.start_pos, 16L);
+  assert_eql(token.length, 3L);
+  avoc_source_free(&src);
+}
+
+void test_token_next_str_lit() {
+  avoc_source src;
+  avoc_status status;
+  avoc_token token;
+
+  load_string(&src, "\"string\"");
+  status = avoc_next_token(&src, &token);
+  assert_okb(status == OK);
+  assert_eq(token.type, TOKEN_LIT);
+  assert_eq(token.lit_type, LIT_STR);
+  assert_eql(token.start_pos, 0L);
+  assert_eql(token.length, 8L);
+  avoc_source_free(&src);
+
+  load_string(&src, "\"a\\\"b\"");
+  status = avoc_next_token(&src, &token);
+  assert_okb(status == OK);
+  assert_eq(token.type, TOKEN_LIT);
+  assert_eq(token.lit_type, LIT_STR);
+  assert_eql(token.start_pos, 0L);
+  assert_eql(token.length, 6L);
+  avoc_source_free(&src);
+
+  load_string(&src, "\"a\" \"b\"");
+  status = avoc_next_token(&src, &token);
+  assert_okb(status == OK);
+  assert_eq(token.type, TOKEN_LIT);
+  assert_eq(token.lit_type, LIT_STR);
+  assert_eql(token.start_pos, 0L);
+  assert_eql(token.length, 3L);
+
+  status = avoc_next_token(&src, &token);
+  assert_okb(status == OK);
+  assert_eq(token.type, TOKEN_LIT);
+  assert_eq(token.lit_type, LIT_STR);
+  assert_eql(token.start_pos, 4L);
+  assert_eql(token.length, 3L);
+  avoc_source_free(&src);
+}
+
+void test_token_next_num_lit() {
+  avoc_source src;
+  avoc_status status;
+  avoc_token token;
+
+  load_string(&src, "1234");
+  status = avoc_next_token(&src, &token);
+  assert_okb(status == OK);
+  assert_eq(token.type, TOKEN_LIT);
+  assert_eq(token.lit_type, LIT_NUM);
+  assert_eql(token.start_pos, 0L);
+  assert_eql(token.length, 4L);
+  avoc_source_free(&src);
+
+  load_string(&src, "1u32");
+  status = avoc_next_token(&src, &token);
+  assert_okb(status == OK);
+  assert_eq(token.type, TOKEN_LIT);
+  assert_eq(token.lit_type, LIT_NUM);
+  assert_eql(token.start_pos, 0L);
+  assert_eql(token.length, 4L);
+  avoc_source_free(&src);
+
+  load_string(&src, "0x12");
+  status = avoc_next_token(&src, &token);
+  assert_okb(status == OK);
+  assert_eq(token.type, TOKEN_LIT);
+  assert_eq(token.lit_type, LIT_NUM);
+  assert_eql(token.start_pos, 0L);
+  assert_eql(token.length, 4L);
+  avoc_source_free(&src);
+
+  load_string(&src, "0b01");
+  status = avoc_next_token(&src, &token);
+  assert_okb(status == OK);
+  assert_eq(token.type, TOKEN_LIT);
+  assert_eq(token.lit_type, LIT_NUM);
+  assert_eql(token.start_pos, 0L);
+  assert_eql(token.length, 4L);
+  avoc_source_free(&src);
+
+  load_string(&src, "0o66");
+  status = avoc_next_token(&src, &token);
+  assert_okb(status == OK);
+  assert_eq(token.type, TOKEN_LIT);
+  assert_eq(token.lit_type, LIT_NUM);
+  assert_eql(token.start_pos, 0L);
+  assert_eql(token.length, 4L);
+  avoc_source_free(&src);
+
+  load_string(&src, "0.12");
+  status = avoc_next_token(&src, &token);
+  assert_okb(status == OK);
+  assert_eq(token.type, TOKEN_LIT);
+  assert_eq(token.lit_type, LIT_NUM);
+  assert_eql(token.start_pos, 0L);
+  assert_eql(token.length, 4L);
+  avoc_source_free(&src);
+
+  load_string(&src, ".123");
+  status = avoc_next_token(&src, &token);
+  assert_okb(status == OK);
+  assert_eq(token.type, TOKEN_LIT);
+  assert_eq(token.lit_type, LIT_NUM);
+  assert_eql(token.start_pos, 0L);
+  assert_eql(token.length, 4L);
+  avoc_source_free(&src);
+
+  load_string(&src, "-.12");
+  status = avoc_next_token(&src, &token);
+  assert_okb(status == OK);
+  assert_eq(token.type, TOKEN_LIT);
+  assert_eq(token.lit_type, LIT_NUM);
+  assert_eql(token.start_pos, 0L);
+  assert_eql(token.length, 4L);
+  avoc_source_free(&src);
+
+  load_string(&src, "-.12f32");
+  status = avoc_next_token(&src, &token);
+  assert_okb(status == OK);
+  assert_eq(token.type, TOKEN_LIT);
+  assert_eq(token.lit_type, LIT_NUM);
+  assert_eql(token.start_pos, 0L);
+  assert_eql(token.length, 7L);
+  avoc_source_free(&src);
+
+  load_string(&src, "1 -2 .3 4i64");
+  status = avoc_next_token(&src, &token);
+  assert_okb(status == OK);
+  assert_eq(token.type, TOKEN_LIT);
+  assert_eq(token.lit_type, LIT_NUM);
+  assert_eql(token.start_pos, 0L);
+  assert_eql(token.length, 1L);
+
+  status = avoc_next_token(&src, &token);
+  assert_okb(status == OK);
+  assert_eq(token.type, TOKEN_LIT);
+  assert_eq(token.lit_type, LIT_NUM);
+  assert_eql(token.start_pos, 2L);
+  assert_eql(token.length, 2L);
+
+  status = avoc_next_token(&src, &token);
+  assert_okb(status == OK);
+  assert_eq(token.type, TOKEN_LIT);
+  assert_eq(token.lit_type, LIT_NUM);
+  assert_eql(token.start_pos, 5L);
+  assert_eql(token.length, 2L);
+
+  status = avoc_next_token(&src, &token);
+  assert_okb(status == OK);
+  assert_eq(token.type, TOKEN_LIT);
+  assert_eq(token.lit_type, LIT_NUM);
+  assert_eql(token.start_pos, 8L);
+  assert_eql(token.length, 4L);
+  avoc_source_free(&src);
+}
+
+void test_token_next_nilbol_lit() {
+  avoc_source src;
+  avoc_status status;
+  avoc_token token;
+
+  load_string(&src, "false true");
+  status = avoc_next_token(&src, &token);
+  assert_okb(status == OK);
+  assert_eq(token.type, TOKEN_LIT);
+  assert_eq(token.lit_type, LIT_BOL);
+  assert_eql(token.start_pos, 0L);
+  assert_eql(token.length, 5L);
+
+  status = avoc_next_token(&src, &token);
+  assert_okb(status == OK);
+  assert_eq(token.type, TOKEN_LIT);
+  assert_eq(token.lit_type, LIT_BOL);
+  assert_eql(token.start_pos, 6L);
+  assert_eql(token.length, 4L);
+  avoc_source_free(&src);
+
+  load_string(&src, "falses trues");
+  status = avoc_next_token(&src, &token);
+  assert_okb(status == OK);
+  assert_eq(token.type, TOKEN_ID);
+
+  status = avoc_next_token(&src, &token);
+  assert_okb(status == OK);
+  assert_eq(token.type, TOKEN_ID);
+  avoc_source_free(&src);
+
+  load_string(&src, "nil nil");
+  status = avoc_next_token(&src, &token);
+  assert_okb(status == OK);
+  assert_eq(token.type, TOKEN_NIL);
+  assert_eql(token.start_pos, 0L);
+  assert_eql(token.length, 3L);
+
+  status = avoc_next_token(&src, &token);
+  assert_okb(status == OK);
+  assert_eq(token.type, TOKEN_NIL);
+  assert_eql(token.start_pos, 4L);
+  assert_eql(token.length, 3L);
+  avoc_source_free(&src);
+
+  load_string(&src, "nils nils");
+  status = avoc_next_token(&src, &token);
+  assert_okb(status == OK);
+  assert_eq(token.type, TOKEN_ID);
+  assert_eql(token.start_pos, 0L);
+  assert_eql(token.length, 4L);
+
+  status = avoc_next_token(&src, &token);
+  assert_okb(status == OK);
+  assert_eq(token.type, TOKEN_ID);
+  assert_eql(token.start_pos, 5L);
+  assert_eql(token.length, 4L);
+  avoc_source_free(&src);
+}
+
+void test_token_next_id() {
+  avoc_source src;
+  avoc_status status;
+  avoc_token token;
+
+  load_string(&src, "var");
+  status = avoc_next_token(&src, &token);
+  assert_okb(status == OK);
+  assert_eq(token.type, TOKEN_ID);
+  assert_eql(token.start_pos, 0L);
+  assert_eql(token.length, 3L);
+  avoc_source_free(&src);
+
+  load_string(&src, "%(id) id");
+  status = avoc_next_token(&src, &token);
+  assert_okb(status == OK);
+  assert_eq(token.type, TOKEN_ID);
+  assert_eql(token.start_pos, 0L);
+  assert_eql(token.length, 5L);
+
+  status = avoc_next_token(&src, &token);
+  assert_okb(status == OK);
+  assert_eq(token.type, TOKEN_ID);
+  assert_eql(token.start_pos, 6L);
+  assert_eql(token.length, 2L);
+  avoc_source_free(&src);
+
+  load_string(&src, "\xF0\x9F\xA5\x91");
+  status = avoc_next_token(&src, &token);
+  assert_okb(status == OK);
+  assert_eq(token.type, TOKEN_ID);
+  assert_eql(token.start_pos, 0L);
+  assert_eql(token.length, 4L);
+  avoc_source_free(&src);
+
+  load_string(&src, "\xF0\x9F\xA5\x91 A");
+  status = avoc_next_token(&src, &token);
+  assert_okb(status == OK);
+  assert_eq(token.type, TOKEN_ID);
+  assert_eql(token.start_pos, 0L);
+  assert_eql(token.length, 4L);
+
+  status = avoc_next_token(&src, &token);
+  assert_okb(status == OK);
+  assert_eq(token.type, TOKEN_ID);
+  assert_eql(token.start_pos, 5L);
+  assert_eql(token.length, 1L);
+  avoc_source_free(&src);
+}
+
+void test_token_edge_cases() {
+  avoc_source src;
+  avoc_status status;
+  avoc_token token;
+
+  load_string(&src, "-.nonum");
+  status = avoc_next_token(&src, &token);
+  assert_okb(status == OK);
+  assert_eq(token.type, TOKEN_ID);
+  assert_eql(token.start_pos, 0L);
+  assert_eql(token.length, 7L);
+  avoc_source_free(&src);
+
+  load_string(&src, "-nonum");
+  status = avoc_next_token(&src, &token);
+  assert_okb(status == OK);
+  assert_eq(token.type, TOKEN_ID);
+  assert_eql(token.start_pos, 0L);
+  assert_eql(token.length, 6L);
+  avoc_source_free(&src);
+
+  load_string(&src, ".nonum");
+  status = avoc_next_token(&src, &token);
+  assert_okb(status == OK);
+  assert_eq(token.type, TOKEN_ID);
+  assert_eql(token.start_pos, 0L);
+  assert_eql(token.length, 6L);
+  avoc_source_free(&src);
+
+  // this is not an error: a token number is detected,
+  // however this should fail on parsing
+  load_string(&src, "0xNUMBER?");
+  status = avoc_next_token(&src, &token);
+  assert_okb(status == OK);
+  assert_eq(token.type, TOKEN_LIT);
+  assert_eq(token.lit_type, LIT_NUM);
+  assert_eql(token.start_pos, 0L);
+  assert_eql(token.length, 9L);
+  avoc_source_free(&src);
+
+  load_string(&src, ";; \xF0\x9F\xA5\x91 ;;");
+  status = avoc_next_token(&src, &token);
+  assert_okb(status == OK);
+  assert_eq(token.type, TOKEN_COMMENT);
+  assert_eql(token.start_pos, 0L);
+  assert_eql(token.length, 10L);
+  avoc_source_free(&src);
+
+  load_string(&src, ";; \xF0\x9F\xA5\x91 ;; 1 ; something \n 2");
+  status = avoc_next_token(&src, &token);
+  assert_okb(status == OK);
+  assert_eq(token.type, TOKEN_COMMENT);
+  assert_eql(token.start_pos, 0L);
+  assert_eql(token.length, 10L);
+
+  status = avoc_next_token(&src, &token);
+  assert_okb(status == OK);
+  assert_eq(token.type, TOKEN_LIT);
+  assert_eql(token.start_pos, 11L);
+  assert_eql(token.length, 1L);
+
+  status = avoc_next_token(&src, &token);
+  assert_okb(status == OK);
+  assert_eq(token.type, TOKEN_COMMENT);
+  assert_eql(token.start_pos, 13L);
+  assert_eql(token.length, 13L);
+
+  status = avoc_next_token(&src, &token);
+  assert_okb(status == OK);
+  assert_eq(token.type, TOKEN_LIT);
+  assert_eql(token.start_pos, 27L);
+  assert_eql(token.length, 1L);
+  avoc_source_free(&src);
+
+  load_string(&src, "\"\xF0\x9F\xA5\x91\"");
+  status = avoc_next_token(&src, &token);
+  assert_okb(status == OK);
+  assert_eq(token.type, TOKEN_LIT);
+  assert_eq(token.lit_type, LIT_STR);
+  assert_eql(token.start_pos, 0L);
+  assert_eql(token.length, 6L);
+  avoc_source_free(&src);
+
+  load_string(&src, "\"\xF0\x9F\xA5\x91 avocado\" \"a\"");
+  status = avoc_next_token(&src, &token);
+  assert_okb(status == OK);
+  assert_eq(token.type, TOKEN_LIT);
+  assert_eq(token.lit_type, LIT_STR);
+  assert_eql(token.start_pos, 0L);
+  assert_eql(token.length, 14L);
+
+  status = avoc_next_token(&src, &token);
+  assert_okb(status == OK);
+  assert_eq(token.type, TOKEN_LIT);
+  assert_eq(token.lit_type, LIT_STR);
+  assert_eql(token.start_pos, 15L);
+  assert_eql(token.length, 3L);
+  avoc_source_free(&src);
+}
+
 int main(){
   trun("test_source_init_free", test_source_init_free);
   trun("test_source_move_fwd_ascii", test_source_move_fwd_ascii);
   trun("test_source_move_fwd_utf8", test_source_move_fwd_utf8);
   trun("test_source_move_fwd_newl", test_source_move_fwd_newl);
+  trun("test_token_init", test_token_init);
+  trun("test_token_next_singlechar", test_token_next_singlechar);
+  trun("test_token_next_comments", test_token_next_comments);
+  trun("test_token_next_str_lit", test_token_next_str_lit);
+  trun("test_token_next_num_lit", test_token_next_num_lit);
+  trun("test_token_next_nilbol_lit", test_token_next_nilbol_lit);
+  trun("test_token_next_id", test_token_next_id);
+  trun("test_token_edge_cases", test_token_edge_cases);
   tresults();
   return 0;
 }
