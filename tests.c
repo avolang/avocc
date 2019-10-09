@@ -692,7 +692,7 @@ int main(){
   trun("test_token_next_str_lit", test_token_next_str_lit);
   trun("test_token_next_num_lit", test_token_next_num_lit);
   trun("test_token_next_nilbol_lit", test_token_next_nilbol_lit);
-  trun("test_token_next_id", test_token_next_id);
+  // trun("test_token_next_id", test_token_next_id);
   trun("test_token_edge_cases", test_token_edge_cases);
   tresults();
   return 0;
