@@ -18,7 +18,7 @@ jobs:
       - persist_to_workspace:
           root: bin
           paths:
-            - avoc_tests
+            - "avocc_tests"
 
   memchecks:
     docker:
