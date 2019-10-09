@@ -8,7 +8,6 @@ workflows:
       - memchecks:
           requires:
             - tests
-
 jobs:
   tests:
     docker:
@@ -17,9 +16,10 @@ jobs:
       - checkout
       - run: make tests
       - persist_to_workspace:
-          - root: bin
-            paths:
-              - avoc_tests
+          root: bin
+          paths:
+            - avoc_tests
+
   memchecks:
     docker:
       - image: gcc:8.2
