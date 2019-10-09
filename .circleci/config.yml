@@ -17,7 +17,7 @@ jobs:
     steps:
       - run: apt-get update && apt-get install clang-tidy -y
       - checkout
-      - run: clang-tidy *.h *.c
+      - run: clang-tidy *.h *.c --
       - run: test -z "$(git status --porcelain)"
 
   tests:
