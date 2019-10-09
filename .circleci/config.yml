@@ -5,6 +5,9 @@ workflows:
   dist-compile:
     jobs:
       - tests
+      - memchecks:
+          requires:
+            - tests
 
 jobs:
   tests:
@@ -13,3 +16,17 @@ jobs:
     steps:
       - checkout
       - run: make tests
+      - persist_to_workspace:
+          - root: bin
+            paths:
+              - avoc_tests
+  memchecks:
+    docker:
+      - image: gcc:8.2
+    steps:
+      - attach_workspace:
+          at: bin
+      - run: ls -la bin
+      - run: sudo apt-get install valgrind
+      - run: rm valgrind.log*
+      - run: G_SLICE=always-malloc G_DEBUG=gc-friendly  valgrind -v --tool=memcheck --leak-check=full --num-callers=40 --log-file=valgrind.log bin/avoc_tests
