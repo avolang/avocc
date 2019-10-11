@@ -43,6 +43,23 @@ void avoc_token_init(avoc_token *token) {
   token->length = 0L;
 }
 
+void avoc_item_init(avoc_item *item) {
+  assert(item != NULL);
+  item->type = 0;
+  item->as_u64 = 0UL;
+  item->token_pos = 0L;
+  item->token_length = 0L;
+  item->next_sibling = NULL;
+  item->prev_sibling = NULL;
+}
+
+void avoc_list_init(avoc_list *list) {
+  assert(list != NULL);
+  list->head = NULL;
+  list->tail = NULL;
+  list->item_count = 0L;
+}
+
 void avoc_source_free(avoc_source *src) {
   assert(src != NULL);
 
@@ -54,6 +71,36 @@ void avoc_source_free(avoc_source *src) {
   if (src->name != NULL) {
     free(src->name);
     src->name = NULL;
+  }
+}
+
+void avoc_item_free(avoc_item *item) {
+  assert(item != NULL);
+  // all of those are the same, but let's keep it named
+  switch (item->type) {
+    case ITEM_LIT_STR:
+      free(item->as_str);
+      break;
+    case ITEM_SYM:
+      free(item->as_sym);
+      break;
+    case ITEM_LIST:
+      avoc_list_free(item->as_list);
+      free(item->as_list);
+      break;
+    default:
+      break;
+  }
+}
+
+void avoc_list_free(avoc_list *list) {
+  assert(list != NULL);
+  if (list->head != NULL) {
+    free(list->head);
+  }
+
+  if (list->tail != NULL) {
+    free(list->tail);
   }
 }
 
@@ -285,6 +332,10 @@ avoc_status avoc_next_token(avoc_source *src, avoc_token *token) {
       }
 
       return OK;
+    case '\'':
+    case '`':
+      PRINT_ERROR(src, "string delimited by ` or ' are reserved and not supported yet");
+      return FAILED;
     case '{':
     case '}':
       PRINT_ERROR(src, "lists delimited by curly braces '{}' are not supported yet");
@@ -340,6 +391,27 @@ avoc_status avoc_next_token(avoc_source *src, avoc_token *token) {
   return OK;
 }
 
+void avoc_list_push(avoc_list *dest, avoc_item *item) {
+  assert(dest != NULL);
+  assert(item != NULL);
+  dest->item_count ++;
 
+  if (dest->head == NULL) {
+    dest->head = item;
+  }
 
+  if (dest->tail == NULL) {
+    dest->tail = item;
+  } else {
+    item->prev_sibling = dest->tail;
+    dest->tail->next_sibling = item;
+    dest->tail = item;
+  }
+}
+
+void avoc_list_merge(avoc_list *left, avoc_list *right) {
+  assert(left != NULL);
+  assert(right != NULL);
+  avoc_list_push(left, right->head);
+}
 

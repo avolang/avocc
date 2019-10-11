@@ -681,6 +681,40 @@ void test_token_edge_cases() {
   avoc_source_free(&src);
 }
 
+void test_lists() {
+  avoc_item item1, item2;
+  avoc_list list;
+
+  avoc_item_init(&item1);
+  assert_eq(item1.type, 0);
+  assert_eql(item1.as_u64, 0UL);
+  assert_eql(item1.token_pos, 0L);
+  assert_eql(item1.token_length, 0L);
+  assert_ok(item1.next_sibling == NULL);
+  assert_ok(item1.prev_sibling == NULL);
+
+  avoc_list_init(&list);
+  assert_ok(list.head == NULL);
+  assert_ok(list.tail == NULL);
+  assert_eql(list.item_count, 0L);
+
+  avoc_list_push(&list, &item1);
+  assert_eql(list.item_count, 1L);
+  assert_okb(list.head == &item1);
+  assert_okb(list.tail == &item1);
+  assert_okb(list.head->next_sibling == NULL);
+  assert_okb(list.tail->next_sibling == NULL);
+
+  avoc_item_init(&item2);
+  avoc_list_push(&list, &item2);
+  assert_eql(list.item_count, 2L);
+  assert_okb(list.head == &item1);
+  assert_okb(list.tail == &item2);
+  assert_okb(list.head->next_sibling == &item2);
+  assert_okb(list.tail->prev_sibling == &item1);
+  assert_okb(list.tail->next_sibling == NULL);
+}
+
 int main(){
   trun("test_source_init_free", test_source_init_free);
   trun("test_source_move_fwd_ascii", test_source_move_fwd_ascii);
@@ -694,6 +728,7 @@ int main(){
   trun("test_token_next_nilbol_lit", test_token_next_nilbol_lit);
   trun("test_token_next_id", test_token_next_id);
   trun("test_token_edge_cases", test_token_edge_cases);
+  trun("test_lists", test_lists);
   tresults();
   return 0;
 }

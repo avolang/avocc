@@ -49,6 +49,47 @@ typedef struct _avoc_token {
   size_t length;
 } avoc_token;
 
+struct _avoc_list;
+
+typedef struct _avoc_item {
+  enum {
+    ITEM_LIT_BOL,
+    ITEM_LIT_U32,
+    ITEM_LIT_U64,
+    ITEM_LIT_I32,
+    ITEM_LIT_I64,
+    ITEM_LIT_F32,
+    ITEM_LIT_F64,
+    ITEM_LIT_STR,
+    ITEM_SYM,
+    ITEM_LIST,
+  } type;
+
+  union {
+    short as_bol;
+    unsigned int as_u32;
+    unsigned long as_u64;
+    int as_i32;
+    long as_i64;
+    float as_f32;
+    double as_f64;
+    char *as_str;
+    char *as_sym;
+    struct _avoc_list *as_list;
+  };
+
+  size_t token_pos;
+  size_t token_length;
+  struct _avoc_item *next_sibling;
+  struct _avoc_item *prev_sibling;
+} avoc_item;
+
+typedef struct _avoc_list {
+  struct _avoc_item *head;
+  struct _avoc_item *tail;
+  size_t item_count;
+} avoc_list;
+
 __attribute__((unused)) static const char *token_type_names[] = {
     "EOF", "EOL", "COLON", "LSTART", "LEND", "COMMENT", "NIL", "LIT", "ID",
 };
@@ -83,13 +124,32 @@ void avoc_source_init(avoc_source *src, const char *name, const char *buf_data,
 // Initializes a token setting its value to zero.
 void avoc_token_init(avoc_token *token);
 
+// Initializes a item
+void avoc_item_init(avoc_item *item);
+
+// Initializes a list
+void avoc_list_init(avoc_list *list);
+
 // Frees the resources of a src without freeing the src itself.
 void avoc_source_free(avoc_source *src);
+
+// Frees the resources of an item without freeing the item itself.
+void avoc_item_free(avoc_item *item);
+
+// Frees the resources of an list without freeing the list itself.
+void avoc_list_free(avoc_list *list);
 
 // Moves forward into the buffer, storing cur_cp and nxt_cp.
 int avoc_source_fwd(avoc_source *src);
 
 // Get a token from the current position of the buffer (in src, out token)
 avoc_status avoc_next_token(avoc_source *src, avoc_token *token);
+
+// Pushes an item into the dest list, the item must be an initialized valid
+// memory address.
+void avoc_list_push(avoc_list *dest, avoc_item *item);
+
+// Merges the right list into the left keeping its order as argumented.
+void avoc_list_merge(avoc_list *left, avoc_list *right);
 
 #endif /* AVOCC_H */
