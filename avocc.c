@@ -412,6 +412,13 @@ void avoc_list_push(avoc_list *dest, avoc_item *item) {
 void avoc_list_merge(avoc_list *left, avoc_list *right) {
   assert(left != NULL);
   assert(right != NULL);
-  avoc_list_push(left, right->head);
+  left->item_count = left->item_count + right->item_count;
+  if (left->tail == NULL) {
+    left->tail = right->head;
+  } else {
+    left->tail->next_sibling = right->head;
+    right->head->prev_sibling = left->tail;
+    left->tail = right->tail;
+  }
 }
 

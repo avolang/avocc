@@ -682,8 +682,8 @@ void test_token_edge_cases() {
 }
 
 void test_lists() {
-  avoc_item item1, item2;
-  avoc_list list;
+  avoc_item item1, item2, item3, item4;
+  avoc_list list1, list2;
 
   avoc_item_init(&item1);
   assert_eq(item1.type, 0);
@@ -693,26 +693,37 @@ void test_lists() {
   assert_ok(item1.next_sibling == NULL);
   assert_ok(item1.prev_sibling == NULL);
 
-  avoc_list_init(&list);
-  assert_ok(list.head == NULL);
-  assert_ok(list.tail == NULL);
-  assert_eql(list.item_count, 0L);
+  avoc_list_init(&list1);
+  assert_ok(list1.head == NULL);
+  assert_ok(list1.tail == NULL);
+  assert_eql(list1.item_count, 0L);
 
-  avoc_list_push(&list, &item1);
-  assert_eql(list.item_count, 1L);
-  assert_okb(list.head == &item1);
-  assert_okb(list.tail == &item1);
-  assert_okb(list.head->next_sibling == NULL);
-  assert_okb(list.tail->next_sibling == NULL);
+  avoc_list_push(&list1, &item1);
+  assert_eql(list1.item_count, 1L);
+  assert_okb(list1.head == &item1);
+  assert_okb(list1.tail == &item1);
+  assert_okb(list1.head->next_sibling == NULL);
+  assert_okb(list1.tail->next_sibling == NULL);
 
   avoc_item_init(&item2);
-  avoc_list_push(&list, &item2);
-  assert_eql(list.item_count, 2L);
-  assert_okb(list.head == &item1);
-  assert_okb(list.tail == &item2);
-  assert_okb(list.head->next_sibling == &item2);
-  assert_okb(list.tail->prev_sibling == &item1);
-  assert_okb(list.tail->next_sibling == NULL);
+  avoc_list_push(&list1, &item2);
+  assert_eql(list1.item_count, 2L);
+  assert_okb(list1.head == &item1);
+  assert_okb(list1.tail == &item2);
+  assert_okb(list1.head->next_sibling == &item2);
+  assert_okb(list1.tail->prev_sibling == &item1);
+  assert_okb(list1.tail->next_sibling == NULL);
+
+  avoc_item_init(&item3);
+  avoc_item_init(&item4);
+  avoc_list_init(&list2);
+  avoc_list_push(&list2, &item3);
+  avoc_list_push(&list2, &item4);
+  avoc_list_merge(&list1, &list2);
+  assert_okb(list1.tail == &item4);
+  assert_okb(list1.tail->prev_sibling == &item3);
+  assert_okb(item2.next_sibling == &item3);
+  assert_okb(item3.prev_sibling == &item2);
 }
 
 int main(){
