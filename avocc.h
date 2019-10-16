@@ -93,7 +93,8 @@ typedef struct _avoc_list {
 } avoc_list;
 
 __attribute__((unused)) static const char *token_type_names[] = {
-    "EOF", "EOL", "COLON", "LSTART", "LEND", "COMMENT", "NIL", "LIT", "ID",
+    "EOF", "EOL",     "COLON", "HLS", "HLE", "VLS",
+    "VLE", "COMMENT", "NIL",   "LIT", "ID",
 };
 
 __attribute__((unused)) static const char *lit_type_names[] = {"BOL", "NUM",
@@ -155,30 +156,34 @@ void avoc_list_push(avoc_list *dest, avoc_item *item);
 void avoc_list_merge(avoc_list *left, avoc_list *right);
 
 // Parse a boolean literal
-avoc_status avoc_parse_bol_lit(avoc_source *source, avoc_token *token, avoc_item *item);
+avoc_status avoc_parse_bol_lit(avoc_source *src, avoc_token *token,
+                               avoc_item *item);
 
 // Parse a numeric literal
-avoc_status avoc_parse_num_lit(avoc_source *source, avoc_token *token, avoc_item *item);
+avoc_status avoc_parse_num_lit(avoc_source *src, avoc_token *token,
+                               avoc_item *item);
 
 // Parse a string literal
-avoc_status avoc_parse_str_lit(avoc_source *source, avoc_token *token, avoc_item *item);
+avoc_status avoc_parse_str_lit(avoc_source *src, avoc_token *token,
+                               avoc_item *item);
 
 // Parse a symbol
-avoc_status avoc_parse_sym(avoc_source *source, avoc_token *token, avoc_item *item);
+avoc_status avoc_parse_sym(avoc_source *src, avoc_token *token,
+                           avoc_item *item);
 
 // Parse an item
-avoc_status avoc_parse_item(avoc_source *source, avoc_item *item);
+avoc_status avoc_parse_item(avoc_source *src, avoc_item *item);
 
 // Parse an horizontal list
-avoc_status avoc_parse_hlst(avoc_source *source, avoc_list *list);
+avoc_status avoc_parse_hlst(avoc_source *src, avoc_list *list);
 
 // Parse a line sub list
-avoc_status avoc_parse_llst(avoc_source *source, avoc_list *list);
+avoc_status avoc_parse_llst(avoc_source *src, avoc_list *list);
 
 // Parse a vertical list
-avoc_status avoc_parse_vlst(avoc_source *source, avoc_list *list);
+avoc_status avoc_parse_vlst(avoc_source *src, avoc_list *list);
 
 // Parse a source
-avoc_status avoc_parse_source(avoc_source *source, avoc_list *list);
+avoc_status avoc_parse_source(avoc_source *src, avoc_list *list);
 
 #endif /* AVOCC_H */

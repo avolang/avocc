@@ -424,3 +424,34 @@ void avoc_list_merge(avoc_list *left, avoc_list *right) {
   }
 }
 
+avoc_status avoc_parse_bol_lit(avoc_source *src, avoc_token *token,
+                               avoc_item *item) {
+  assert(src != NULL);
+  assert(token != NULL);
+  assert(item != NULL);
+  assert(token->type == TOKEN_LIT);
+  assert(token->lit_type == LIT_BOL);
+  const char *value = (const char *) src->buf_data + token->start_pos;
+  if (strncmp("true", value, 4) == 0 && token->length == 4) {
+    item->type = ITEM_LIT_BOL;
+    item->as_bol = 1;
+  } else {
+    item->type = ITEM_LIT_BOL;
+    item->as_bol = 0;
+  }
+
+  return OK;
+}
+
+avoc_status avoc_parse_num_lit(avoc_source *src, avoc_token *token,
+                               avoc_item *item) {
+  assert(src != NULL);
+  assert(token != NULL);
+  assert(item != NULL);
+  assert(token->type == TOKEN_LIT);
+  assert(token->lit_type == LIT_NUM);
+
+
+  return OK;
+}
+

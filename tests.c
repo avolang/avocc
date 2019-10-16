@@ -738,6 +738,29 @@ void test_lists() {
   assert_okb(item3.prev_sibling == &item2);
 }
 
+void test_parse_bol_lit() {
+  avoc_source src;
+  avoc_token token;
+  avoc_item item;
+  avoc_status status;
+
+  load_string(&src, "true false");
+  status = avoc_next_token(&src, &token);
+  assert_okb(status == OK);
+  status = avoc_parse_bol_lit(&src, &token, &item);
+  assert_okb(status == OK);
+  assert_eq(item.type, ITEM_LIT_BOL);
+  assert_eq(item.as_bol, 1);
+
+  status = avoc_next_token(&src, &token);
+  assert_okb(status == OK);
+  status = avoc_parse_bol_lit(&src, &token, &item);
+  assert_okb(status == OK);
+  assert_eq(item.type, ITEM_LIT_BOL);
+  assert_eq(item.as_bol, 0);
+  avoc_source_free(&src);
+}
+
 int main(){
   trun("test_source_init_free", test_source_init_free);
   trun("test_source_move_fwd_ascii", test_source_move_fwd_ascii);
@@ -752,6 +775,7 @@ int main(){
   trun("test_token_next_id", test_token_next_id);
   trun("test_token_edge_cases", test_token_edge_cases);
   trun("test_lists", test_lists);
+  trun("test_parse_bol_lit", test_parse_bol_lit);
   tresults();
   return 0;
 }
