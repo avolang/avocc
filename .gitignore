@@ -53,3 +53,6 @@ dkms.conf
 
 # Bin directory
 bin/
+
+# CTags file
+tags
