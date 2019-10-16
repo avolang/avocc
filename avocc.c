@@ -250,12 +250,18 @@ avoc_status avoc_next_token(avoc_source *src, avoc_token *token) {
     case '<':
     case '[':
     case '(':
-      token->type = TOKEN_LSTART;
+      token->type = TOKEN_HLS;
+      return OK;
+    case '{':
+      token->type = TOKEN_VLS;
       return OK;
     case '>':
     case ']':
     case ')':
-      token->type = TOKEN_LEND;
+      token->type = TOKEN_HLE;
+      return OK;
+    case '}':
+      token->type = TOKEN_VLE;
       return OK;
     case ';':
       token->type = TOKEN_COMMENT;
@@ -335,10 +341,6 @@ avoc_status avoc_next_token(avoc_source *src, avoc_token *token) {
     case '\'':
     case '`':
       PRINT_ERROR(src, "string delimited by ` or ' are reserved and not supported yet");
-      return FAILED;
-    case '{':
-    case '}':
-      PRINT_ERROR(src, "lists delimited by curly braces '{}' are not supported yet");
       return FAILED;
     case UTF8_ERROR:
       PRINT_ERROR(src, "utf-8 encoding error");
