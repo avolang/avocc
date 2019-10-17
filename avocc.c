@@ -104,7 +104,7 @@ void avoc_list_free(avoc_list *list) {
   }
 }
 
-static unsigned utf8_get(avoc_source *src) {
+static int utf8_get(avoc_source *src) {
   return src->buf_pos >= src->buf_len ?
       UTF8_END : (src->buf_data[(src)->buf_pos] & 0xFFu);
 }
@@ -132,7 +132,7 @@ static int utf8_cp_size(int cp) {
 
 static int utf8_next_cp(avoc_source *src) {
   assert(src != NULL);
-  unsigned int c0 = utf8_get(src);
+  int c0 = utf8_get(src);
   if (c0 == UTF8_END || c0 == UTF8_ERROR) {
     return c0;
   }
