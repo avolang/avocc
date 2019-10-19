@@ -39,5 +39,4 @@ jobs:
             at: bin
         - run: ls -la bin
         - run: apt-get update && apt-get install valgrind -y
-        - run: rm valgrind.log*
         - run: G_DEBUG=gc-friendly valgrind -v --tool=memcheck --leak-check=full --num-callers=40 bin/avocc_tests
