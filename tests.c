@@ -364,6 +364,46 @@ void test_token_next_str_lit() {
   assert_eql(token.start_pos, 4L);
   assert_eql(token.length, 3L);
   avoc_source_free(&src);
+
+  load_string(&src, "\"\\n\"");
+  status = avoc_next_token(&src, &token);
+  assert_okb(status == OK);
+  assert_eq(token.type, TOKEN_LIT);
+  assert_eq(token.lit_type, LIT_STR);
+  assert_eql(token.start_pos, 0L);
+  assert_eql(token.length, 4L);
+  assert_eql(token.predicted_length, 1L);
+  avoc_source_free(&src);
+
+  load_string(&src, "\"\\\\\"");
+  status = avoc_next_token(&src, &token);
+  assert_okb(status == OK);
+  assert_eq(token.type, TOKEN_LIT);
+  assert_eq(token.lit_type, LIT_STR);
+  assert_eql(token.start_pos, 0L);
+  assert_eql(token.length, 4L);
+  assert_eql(token.predicted_length, 1L);
+  avoc_source_free(&src);
+
+  load_string(&src, "\"\\xFF\"");
+  status = avoc_next_token(&src, &token);
+  assert_okb(status == OK);
+  assert_eq(token.type, TOKEN_LIT);
+  assert_eq(token.lit_type, LIT_STR);
+  assert_eql(token.start_pos, 0L);
+  assert_eql(token.length, 6L);
+  assert_eql(token.predicted_length, 1L);
+  avoc_source_free(&src);
+
+  load_string(&src, "\"\\u00A1\"");
+  status = avoc_next_token(&src, &token);
+  assert_okb(status == OK);
+  assert_eq(token.type, TOKEN_LIT);
+  assert_eq(token.lit_type, LIT_STR);
+  assert_eql(token.start_pos, 0L);
+  assert_eql(token.length, 8L);
+  assert_eql(token.predicted_length, 2L);
+  avoc_source_free(&src);
 }
 
 void test_token_next_num_lit() {
@@ -554,20 +594,6 @@ void test_token_next_id() {
   assert_eq(token.type, TOKEN_ID);
   assert_eql(token.start_pos, 0L);
   assert_eql(token.length, 3L);
-  avoc_source_free(&src);
-
-  load_string(&src, "%(id) id");
-  status = avoc_next_token(&src, &token);
-  assert_okb(status == OK);
-  assert_eq(token.type, TOKEN_ID);
-  assert_eql(token.start_pos, 0L);
-  assert_eql(token.length, 5L);
-
-  status = avoc_next_token(&src, &token);
-  assert_okb(status == OK);
-  assert_eq(token.type, TOKEN_ID);
-  assert_eql(token.start_pos, 6L);
-  assert_eql(token.length, 2L);
   avoc_source_free(&src);
 
   load_string(&src, "\xF0\x9F\xA5\x91");

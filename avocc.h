@@ -49,7 +49,7 @@ typedef struct _avoc_token {
 
   size_t start_pos;
   size_t length;
-  size_t escaped_length;
+  size_t predicted_length;
 } avoc_token;
 
 struct _avoc_list;

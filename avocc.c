@@ -41,6 +41,7 @@ void avoc_token_init(avoc_token *token) {
   token->lit_type = LIT_BOL;
   token->start_pos = 0L;
   token->length = 0L;
+  token->predicted_length = 0L;
 }
 
 void avoc_item_init(avoc_item *item) {
@@ -228,6 +229,7 @@ avoc_status avoc_next_token(avoc_source *src, avoc_token *token) {
   }
 
   int allow_newl = 0;
+  int terminator = 0;
   token->start_pos = src->cur_cp_pos;
   int cp_size = utf8_cp_size(cur);
   if (cp_size == -1) {
@@ -297,9 +299,15 @@ avoc_status avoc_next_token(avoc_source *src, avoc_token *token) {
       }
 
       return OK;
+    case '\'':
+    case '`':
     case '"':
       token->type = TOKEN_LIT;
       token->lit_type = LIT_STR;
+      terminator = cur;
+      if (cur == '`') {
+        allow_newl = 1;
+      }
 
       while ((cur = avoc_source_fwd(src)) != UTF8_END) {
         if (cur == UTF8_ERROR) {
@@ -307,7 +315,7 @@ avoc_status avoc_next_token(avoc_source *src, avoc_token *token) {
           return FAILED;
         }
 
-        if (cur == '\n') {
+        if (cur == '\n' && !allow_newl) {
           PRINT_ERROR(src, "unterminated string");
           return FAILED;
         }
@@ -318,39 +326,55 @@ avoc_status avoc_next_token(avoc_source *src, avoc_token *token) {
           return FAILED;
         }
 
-        token->length += cp_size;
-        token->escaped_length += cp_size;
         if (cur == '\\') {
+          char codebuf[10];
+          memset(codebuf, 0L, sizeof(char) * 10);
+
           int taken_cps = 0;
-          int escaped_inc = 0;
-          if (src->nxt_cp == '"' || strchr("abefnrtv\\?", src->nxt_cp) != NULL) {
+          if (src->nxt_cp == terminator || strchr("abefnrtv\\?", src->nxt_cp) != NULL) {
             taken_cps = 1;
           } else if (src->nxt_cp == 'x') {
-            taken_cps = 2;
+            taken_cps = 3;
           } else if (src->nxt_cp == 'u') {
-            taken_cps = 4;
-            escaped_inc = 2; // TODO: Actually decode the code to get the size in utf8
+            taken_cps = 5;
+            if ((src->buf_pos + token->start_pos + 7) < (src->buf_pos + src->buf_len)) {
+              memcpy(codebuf, (const char *) (src->buf_data + token->start_pos + 3), 4);
+            }
           } else if (src->nxt_cp == 'U') {
-            taken_cps = 8;
-            escaped_inc = 4; // TODO: Actually decode the code to get the size in utf8
+            taken_cps = 9;
+            if ((src->buf_pos + token->start_pos + 11) < (src->buf_pos + src->buf_len)) {
+              memcpy(codebuf, (const char *) (src->buf_data + token->start_pos + 3), 8);
+            }
           } else {
             PRINT_ERRORF(src, "unknown escape sequence: \\%c", src->nxt_cp);
             return FAILED;
           }
 
+          // Accept this character '\\'
+          token->length += cp_size;
+
+          // Predict length based on the codepoint size of the future unescaped character
+          if (codebuf[0] != 0) {
+            int codelen = (int) strtol(codebuf, NULL, 16);
+            token->predicted_length += utf8_cp_size(codelen);
+          } else {
+            token->predicted_length += cp_size;
+          }
+
+          // Following escape sequence after '\\': 'a', 'x12', 'u1234', 'U12345678'
           for (int i=0;i<taken_cps;i++) {
             int cp = avoc_source_fwd(src);
             token->length += utf8_cp_size(cp);
           }
 
-          token->escaped_length += escaped_inc;
           continue;
+        } else {
+          token->length += cp_size;
+          token->predicted_length += cp_size;
         }
 
-        if (src->nxt_cp == '"') {
-          avoc_source_fwd(src);
-          token->length += utf8_cp_size('"'); // Include the trailing '"'
-          token->escaped_length = token->length;
+        if (cur == terminator) {
+          token->predicted_length--;
           break;
         }
       }
@@ -361,10 +385,6 @@ avoc_status avoc_next_token(avoc_source *src, avoc_token *token) {
       }
 
       return OK;
-    case '\'':
-    case '`':
-      PRINT_ERROR(src, "string delimited by ` or ' are reserved and not supported yet");
-      return FAILED;
     case UTF8_ERROR:
       PRINT_ERROR(src, "utf-8 encoding error");
       return FAILED;
@@ -377,7 +397,7 @@ avoc_status avoc_next_token(avoc_source *src, avoc_token *token) {
         }
 
         token->length += utf8_cp_size(cur);
-        if (src->nxt_cp == ':' || isspace(src->nxt_cp)) {
+        if (strchr(":<[({})]>", src->nxt_cp) != NULL || isspace(src->nxt_cp)) {
           break;
         }
       } while ((cur = avoc_source_fwd(src)) != UTF8_END);
@@ -457,7 +477,6 @@ avoc_status avoc_parse_lit(avoc_source *src, avoc_token *token,
   const char *contents = (const char *) src->buf_data + token->start_pos;
   char *contents_cpy = NULL;
   size_t contents_len = token->length;
-  size_t new_contents_len = contents_len;
   enum { BASE_BIN, BASE_OCT, BASE_DEC, BASE_HEX } num_base = BASE_DEC;
   const int bases[] = {2, 8, 10, 16};
   const char *digits[] = {"01", "01234567", "0123456789", "0123456789ABCDEF"};
@@ -647,12 +666,6 @@ avoc_status avoc_parse_lit(avoc_source *src, avoc_token *token,
       free(contents_cpy);
       break;
     case LIT_STR:
-      // Count the real string size (escaping characters)
-      for (size_t i = 0; i < contents_len - 1; i += 2) {
-        int c1 = contents[i - 1];
-        int c2 = contents[i];
-      }
-
       break;
   }
 
