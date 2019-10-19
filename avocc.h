@@ -49,6 +49,7 @@ typedef struct _avoc_token {
 
   size_t start_pos;
   size_t length;
+  size_t escaped_length;
 } avoc_token;
 
 struct _avoc_list;
@@ -155,18 +156,9 @@ void avoc_list_push(avoc_list *dest, avoc_item *item);
 // Merges the right list into the left keeping its order as argumented.
 void avoc_list_merge(avoc_list *left, avoc_list *right);
 
-// Parse a boolean literal
-avoc_status avoc_parse_bol_lit(avoc_source *src, avoc_token *token,
+// Parse a literal
+avoc_status avoc_parse_lit(avoc_source *src, avoc_token *token,
                                avoc_item *item);
-
-// Parse a numeric literal
-avoc_status avoc_parse_num_lit(avoc_source *src, avoc_token *token,
-                               avoc_item *item);
-
-// Parse a string literal
-avoc_status avoc_parse_str_lit(avoc_source *src, avoc_token *token,
-                               avoc_item *item);
-
 // Parse a symbol
 avoc_status avoc_parse_sym(avoc_source *src, avoc_token *token,
                            avoc_item *item);
