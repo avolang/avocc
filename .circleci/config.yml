@@ -6,9 +6,9 @@ workflows:
     jobs:
       - style
       - tests
-      # - memchecks:
-      #  requires:
-      #    - tests
+      - memchecks:
+         requires:
+           - tests
 jobs:
   style:
     docker:
@@ -31,13 +31,13 @@ jobs:
           paths:
             - "avocc_tests"
 
-    # memchecks:
-    #   docker:
-    #     - image: gcc:9
-    #   steps:
-    #     - attach_workspace:
-    #         at: bin
-    #     - run: ls -la bin
-    #     - run: apt-get install valgrind
-    #     - run: rm valgrind.log*
-    #     - run: G_SLICE=always-malloc G_DEBUG=gc-friendly  valgrind -v --tool=memcheck --leak-check=full --num-callers=40 --log-file=valgrind.log bin/avoc_tests
+memchecks:
+    docker:
+      - image: gcc:9
+    steps:
+      - attach_workspace:
+          at: bin
+      - run: ls -la bin
+      - run: apt-get update && apt-get install valgrind -y
+      - run: rm valgrind.log*
+      - run: G_DEBUG=gc-friendly valgrind -v --tool=memcheck --leak-check=full --num-callers=40 bin/avocc_tests
