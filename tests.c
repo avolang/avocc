@@ -372,7 +372,7 @@ void test_token_next_str_lit() {
   assert_eq(token.lit_type, LIT_STR);
   assert_eql(token.start_pos, 0L);
   assert_eql(token.length, 4L);
-  assert_eql(token.predicted_length, 1L);
+  assert_eql(token.unqlen, 1L);
   avoc_source_free(&src);
 
   load_string(&src, "\"\\\\\"");
@@ -382,7 +382,7 @@ void test_token_next_str_lit() {
   assert_eq(token.lit_type, LIT_STR);
   assert_eql(token.start_pos, 0L);
   assert_eql(token.length, 4L);
-  assert_eql(token.predicted_length, 1L);
+  assert_eql(token.unqlen, 1L);
   avoc_source_free(&src);
 
   load_string(&src, "\"\\xFF\"");
@@ -392,7 +392,7 @@ void test_token_next_str_lit() {
   assert_eq(token.lit_type, LIT_STR);
   assert_eql(token.start_pos, 0L);
   assert_eql(token.length, 6L);
-  assert_eql(token.predicted_length, 1L);
+  assert_eql(token.unqlen, 1L);
   avoc_source_free(&src);
 
   load_string(&src, "\"\\u00A1\"");
@@ -402,7 +402,7 @@ void test_token_next_str_lit() {
   assert_eq(token.lit_type, LIT_STR);
   assert_eql(token.start_pos, 0L);
   assert_eql(token.length, 8L);
-  assert_eql(token.predicted_length, 2L);
+  assert_eql(token.unqlen, 2L);
   avoc_source_free(&src);
 }
 
@@ -972,6 +972,72 @@ void test_parse_flt_lit() {
   avoc_source_free(&src);
 }
 
+void test_parse_str_lit() {
+  avoc_source src;
+  avoc_token token;
+  avoc_item item;
+  avoc_status status;
+
+  load_string(&src, "'str1' \"str2\" `str3`");
+  status = avoc_next_token(&src, &token);
+  assert_okb(status == OK);
+  status = avoc_parse_lit(&src, &token, &item);
+  assert_okb(status == OK);
+  assert_eq(item.type, ITEM_LIT_STR);
+  assert_eqs(item.as_str,"str1");
+
+  status = avoc_next_token(&src, &token);
+  assert_okb(status == OK);
+  status = avoc_parse_lit(&src, &token, &item);
+  assert_okb(status == OK);
+  assert_eq(item.type, ITEM_LIT_STR);
+  assert_eqs(item.as_str,"str2");
+
+  status = avoc_next_token(&src, &token);
+  assert_okb(status == OK);
+  status = avoc_parse_lit(&src, &token, &item);
+  assert_okb(status == OK);
+  assert_eq(item.type, ITEM_LIT_STR);
+  assert_eqs(item.as_str,"str3");
+  avoc_source_free(&src);
+
+  load_string(&src, "'c\\\\c'");
+  status = avoc_next_token(&src, &token);
+  assert_okb(status == OK);
+  status = avoc_parse_lit(&src, &token, &item);
+  assert_okb(status == OK);
+  assert_eq(item.type, ITEM_LIT_STR);
+  assert_eqs(item.as_str, "c\\c");
+  avoc_source_free(&src);
+
+  load_string(&src, "'c\\x0Ac'");
+  status = avoc_next_token(&src, &token);
+  assert_okb(status == OK);
+  status = avoc_parse_lit(&src, &token, &item);
+  assert_okb(status == OK);
+  assert_eq(item.type, ITEM_LIT_STR);
+  assert_eqs(item.as_str, "c\nc");
+  avoc_source_free(&src);
+
+  load_string(&src, "'x \\u00A1 x'");
+  status = avoc_next_token(&src, &token);
+  assert_okb(status == OK);
+  status = avoc_parse_lit(&src, &token, &item);
+  assert_okb(status == OK);
+  assert_eq(item.type, ITEM_LIT_STR);
+  assert_eqs(item.as_str, "x \xC2\xA1 x");
+  avoc_source_free(&src);
+
+  load_string(&src, "'x \\U0001F60A x'");
+  status = avoc_next_token(&src, &token);
+  assert_okb(status == OK);
+  status = avoc_parse_lit(&src, &token, &item);
+  assert_okb(status == OK);
+  assert_eq(item.type, ITEM_LIT_STR);
+  assert_eqs(item.as_str, "x \xF0\x9F\x98\x8A x");
+  avoc_source_free(&src);
+}
+
 int main(){
   trun("test_source_init_free", test_source_init_free);
   trun("test_source_move_fwd_ascii", test_source_move_fwd_ascii);
@@ -989,6 +1055,7 @@ int main(){
   trun("test_parse_bol_lit", test_parse_bol_lit);
   trun("test_parse_int_lit", test_parse_int_lit);
   trun("test_parse_flt_lit", test_parse_flt_lit);
+  trun("test_parse_str_lit", test_parse_str_lit);
   tresults();
   return 0;
 }

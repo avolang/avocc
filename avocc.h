@@ -47,9 +47,9 @@ typedef struct _avoc_token {
     LIT_STR,
   } lit_type;
 
+  size_t unqlen;
   size_t start_pos;
   size_t length;
-  size_t predicted_length;
 } avoc_token;
 
 struct _avoc_list;

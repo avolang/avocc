@@ -41,7 +41,7 @@ void avoc_token_init(avoc_token *token) {
   token->lit_type = LIT_BOL;
   token->start_pos = 0L;
   token->length = 0L;
-  token->predicted_length = 0L;
+  token->unqlen = 0L;
 }
 
 void avoc_item_init(avoc_item *item) {
@@ -187,6 +187,32 @@ static int utf8_next_cp(avoc_source *src) {
   return UTF8_ERROR;
 }
 
+int utf8_encode(char *dest, unsigned ch) {
+    if (ch < 0x80) {
+        dest[0] = (char)ch;
+        return 1;
+    }
+    if (ch < 0x800) {
+        dest[0] = (ch>>6) | 0xC0;
+        dest[1] = (ch & 0x3F) | 0x80;
+        return 2;
+    }
+    if (ch < 0x10000) {
+        dest[0] = (ch>>12) | 0xE0;
+        dest[1] = ((ch>>6) & 0x3F) | 0x80;
+        dest[2] = (ch & 0x3F) | 0x80;
+        return 3;
+    }
+    if (ch < 0x110000) {
+        dest[0] = (ch>>18) | 0xF0;
+        dest[1] = ((ch>>12) & 0x3F) | 0x80;
+        dest[2] = ((ch>>6) & 0x3F) | 0x80;
+        dest[3] = (ch & 0x3F) | 0x80;
+        return 4;
+    }
+    return 0;
+}
+
 int avoc_source_fwd(avoc_source *src) {
   assert(src != NULL);
   // We count two-by-two cps, so we need an extra item
@@ -327,9 +353,7 @@ avoc_status avoc_next_token(avoc_source *src, avoc_token *token) {
         }
 
         if (cur == '\\') {
-          char codebuf[10];
-          memset(codebuf, 0L, sizeof(char) * 10);
-
+          char codebuf[9] = "\0\0\0\0\0\0\0\0\0";
           int taken_cps = 0;
           if (src->nxt_cp == terminator || strchr("abefnrtv\\?", src->nxt_cp) != NULL) {
             taken_cps = 1;
@@ -356,9 +380,9 @@ avoc_status avoc_next_token(avoc_source *src, avoc_token *token) {
           // Predict length based on the codepoint size of the future unescaped character
           if (codebuf[0] != 0) {
             int codelen = (int) strtol(codebuf, NULL, 16);
-            token->predicted_length += utf8_cp_size(codelen);
+            token->unqlen += utf8_cp_size(codelen);
           } else {
-            token->predicted_length += cp_size;
+            token->unqlen += cp_size;
           }
 
           // Following escape sequence after '\\': 'a', 'x12', 'u1234', 'U12345678'
@@ -370,11 +394,11 @@ avoc_status avoc_next_token(avoc_source *src, avoc_token *token) {
           continue;
         } else {
           token->length += cp_size;
-          token->predicted_length += cp_size;
+          token->unqlen += cp_size;
         }
 
         if (cur == terminator) {
-          token->predicted_length--;
+          token->unqlen--;
           break;
         }
       }
@@ -666,6 +690,101 @@ avoc_status avoc_parse_lit(avoc_source *src, avoc_token *token,
       free(contents_cpy);
       break;
     case LIT_STR:
+      item->type = ITEM_LIT_STR;
+      contents_cpy = calloc(token->unqlen+1, sizeof(char));
+      memset(contents_cpy, 0L, contents_len+1);
+
+      for (size_t i = 1, j = 0; i<token->length-1; i++, j++) {
+        int peek = contents[i];
+        int mask = peek & 0xFF;
+        int skip = 0;
+        if ((mask & 0x80) == 0) {
+          skip = 0;
+          if (peek == '\\' && i<token->length-2 && contents[0] != '`') {
+            peek = contents[++i];
+            char codebuf[9] = "\0\0\0\0\0\0\0\0\0";
+            int ch = 0;
+            int take = 0;
+            switch (peek) {
+              case 'e':
+              case '\\':
+                ch = '\\';
+                break;
+              case 'a':
+                ch = '\a';
+                break;
+              case 'b':
+                ch = '\b';
+                break;
+              case 'f':
+                ch = '\f';
+                break;
+              case 'n':
+                ch = '\n';
+                break;
+              case 'r':
+                ch = '\r';
+                break;
+              case 't':
+                ch = '\t';
+                break;
+              case 'v':
+                ch = '\v';
+                break;
+              case '"':
+                ch = '"';
+                break;
+              case '\'':
+                ch = '\'';
+                break;
+              case 'x':
+                take = 2;
+                break;
+              case 'u':
+                take = 4;
+                break;
+              case 'U':
+                take = 8;
+                break;
+              default:
+                PRINT_ERROR(src, "unknown escape sequence");
+                return FAILED;
+            }
+
+            if (take > 0) {
+              for (int k = 0; k < take; k++) {
+                codebuf[k] = contents[++i];
+              }
+
+              ch = strtol(codebuf, NULL, 16);
+            }
+
+            int cp_size = utf8_encode(contents_cpy+j, ch);
+            j += cp_size - 1;
+            continue;
+          } else if (peek == '\\' && contents[0] != '`') {
+            PRINT_ERROR(src, "unterminated escape sequence");
+            return FAILED;
+          }
+        } else if ((mask & 0xE0) == 0xC0) {
+          skip = 1;
+        } else if ((mask & 0xF0) == 0xE0) {
+          skip = 2;
+        } else if ((mask & 0xF8) == 0xF0) {
+          skip = 3;
+        } else {
+          PRINT_ERROR(src, "utf-8 decode error");
+          return FAILED;
+        }
+
+        contents_cpy[j] = contents[i];
+        for (int k=0;k<skip;k++) {
+          i++;
+          contents_cpy[k] = contents[i];
+        }
+      }
+
+      item->as_str = contents_cpy;
       break;
   }
 
