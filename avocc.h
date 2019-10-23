@@ -26,8 +26,7 @@ typedef struct _avoc_source {
 typedef enum { OK, FAILED } avoc_status;
 
 // Token reference
-typedef struct _avoc_token {
-  enum {
+typedef enum _avoc_token_type {
     TOKEN_EOF,
     TOKEN_EOL,
     TOKEN_COLON,
@@ -39,8 +38,10 @@ typedef struct _avoc_token {
     TOKEN_NIL,
     TOKEN_LIT,
     TOKEN_ID,
-  } type;
+} avoc_token_type;
 
+typedef struct _avoc_token {
+  avoc_token_type type;
   enum {
     LIT_BOL,
     LIT_NUM,
@@ -66,6 +67,7 @@ typedef struct _avoc_item {
     ITEM_LIT_STR,
     ITEM_SYM,
     ITEM_LIST,
+    ITEM_COMMENT,
   } type;
 
   union {
@@ -81,6 +83,9 @@ typedef struct _avoc_item {
     struct _avoc_list *as_list;
   };
 
+  struct _avoc_list* sym_composed_type;
+  char *sym_ordinary_type;
+
   size_t token_pos;
   size_t token_length;
   struct _avoc_item *next_sibling;
@@ -91,6 +96,11 @@ typedef struct _avoc_list {
   struct _avoc_item *head;
   struct _avoc_item *tail;
   size_t item_count;
+
+  enum {
+    VERTICAL,
+    HORIZONTAL,
+  } orientation;
 } avoc_list;
 
 __attribute__((unused)) static const char *token_type_names[] = {
@@ -108,7 +118,7 @@ __attribute__((unused)) static const char *lit_type_names[] = {"BOL", "NUM",
 
 #define PRINT_ERRORF(src, msg, ...)                                            \
   fprintf(stderr, "%s:%ld:%ld: " msg "\n", (src)->name, (src)->row,            \
-          (src)->col, ##__VA_ARGS__)
+          (src)->col, __VA_ARGS__)
 
 #define PRINT_UNEXPECTED_CHAR_ERROR(src, expected, given)                      \
   fprintf(stderr,                                                              \
@@ -163,17 +173,21 @@ avoc_status avoc_parse_lit(avoc_source *src, avoc_token *token,
 avoc_status avoc_parse_sym(avoc_source *src, avoc_token *token,
                            avoc_item *item);
 
+// Parse a comment
+avoc_status avoc_parse_comment(avoc_source *src, avoc_token *token,
+                           avoc_item *item);
+
 // Parse an item
-avoc_status avoc_parse_item(avoc_source *src, avoc_item *item);
+avoc_status avoc_parse_item(avoc_source *src, avoc_token *token, avoc_item *item, avoc_token_type terminators[]);
 
 // Parse an horizontal list
-avoc_status avoc_parse_hlst(avoc_source *src, avoc_list *list);
+avoc_status avoc_parse_hlst(avoc_source *src, avoc_token *token, avoc_list *list);
 
 // Parse a line sub list
-avoc_status avoc_parse_llst(avoc_source *src, avoc_list *list);
+avoc_status avoc_parse_llst(avoc_source *src, avoc_token *token, avoc_list *list);
 
 // Parse a vertical list
-avoc_status avoc_parse_vlst(avoc_source *src, avoc_list *list);
+avoc_status avoc_parse_vlst(avoc_source *src, avoc_token *token, avoc_list *list);
 
 // Parse a source
 avoc_status avoc_parse_source(avoc_source *src, avoc_list *list);
