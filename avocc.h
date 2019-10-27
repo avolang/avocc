@@ -96,11 +96,6 @@ typedef struct _avoc_list {
   struct _avoc_item *head;
   struct _avoc_item *tail;
   size_t item_count;
-
-  enum {
-    VERTICAL,
-    HORIZONTAL,
-  } orientation;
 } avoc_list;
 
 __attribute__((unused)) static const char *token_type_names[] = {
@@ -178,16 +173,10 @@ avoc_status avoc_parse_comment(avoc_source *src, avoc_token *token,
                            avoc_item *item);
 
 // Parse an item
-avoc_status avoc_parse_item(avoc_source *src, avoc_token *token, avoc_item *item, avoc_token_type terminators[]);
+avoc_status avoc_parse_item(avoc_source *src, avoc_token *token, avoc_item *item);
 
 // Parse an horizontal list
-avoc_status avoc_parse_hlst(avoc_source *src, avoc_token *token, avoc_list *list);
-
-// Parse a line sub list
-avoc_status avoc_parse_llst(avoc_source *src, avoc_token *token, avoc_list *list);
-
-// Parse a vertical list
-avoc_status avoc_parse_vlst(avoc_source *src, avoc_token *token, avoc_list *list);
+avoc_status avoc_parse_list(avoc_source *src, avoc_token *token, avoc_list *list);
 
 // Parse a source
 avoc_status avoc_parse_source(avoc_source *src, avoc_list *list);
