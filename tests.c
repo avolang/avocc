@@ -1187,6 +1187,7 @@ void test_parse_lists() {
   assert_okb(status == OK);
   assert_okb(list.head == NULL);
   assert_okb(list.tail == NULL);
+  avoc_list_free(&list);
 
   load_string(&src, "(first second)");
   avoc_list_init(&list);
