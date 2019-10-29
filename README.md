@@ -22,29 +22,29 @@ some support may be available.
 ```
 COLON := ':'
 DIGIT := /* 0-9 */
-NEW_LINE := /* New line character */
-UNICODE_SYMBOL := /* All characters except <{([])}> and space*/
+EOF := /* End of file */
+EOL := /* New line character */
+UNICODE_ID := /* All characters except terminators space */
+UNICODE_NO_NEWLINE := /* All characters except new line */
 UNICODE := /* All unicode characters */
-UNICODE_NO_NEWLINE := /* All unicode characters except new line */
-LIST_START := /* <{[( */
-LIST_END := /* )]}> */
+LIST_START := '<' | '[' | '('
+LIST_END := '>' | ']' | ')'
 
 NIL := 'nil'
-INT_LITERAL := { '0x' | '0b' | '0o' } [ DIGIT ] { 'i32' | 'i64' }
-FLO_LITERAL := { '-' } [ DIGIT ] { '.' } [ DIGIT ] { 'f32' | 'f64' }
-BOL_LITERAL := true | false
-STR_LITERAL := ( ''' | '"' ) [ UNICODE_NO_NEWLINE ] ( ''' | '"' ) | '`' [ UNICODE ] '`'
-LITERAL := INT_LITERAL | FLO_LITERAL | BOL_LITERAL | STR_LITERAL
+LIT_INT := { '0x' | '0b' | '0o' } [ DIGIT ] { 'i32' | 'i64' }
+LIT_FLO := { '-' } [ DIGIT ] { '.' } [ DIGIT ] { 'f32' | 'f64' }
+LIT_BOL := true | false
+LIT_STR := ( ''' | '"' ) [ UNICODE_NO_NEWLINE ] ( ''' | '"' ) | '`' [ UNICODE ] '`'
+LIT := LIT_INT | LIT_FLO | LIT_BOL | LIT_STR
 
-LINE_COMMENT := ';' [ UNICODE ] NEW_LINE
+LINE_COMMENT := ';' [ UNICODE_NO_NEWLINE ] EOL
 BLOCK_COMMENT := ';;' [ UNICODE ] ';;'
-COMMENT := LINE_COMMENT | BLOCK_COMMENT
+COM := LINE_COMMENT | BLOCK_COMMENT
 
-TYPE_SPEC := COLON [ UNICODE_SYMBOL ] | COLON LIST
-SYMBOL := [ UNICODE_SYMBOL ] | [ UNICODE_SYMBOL ] TYPE_SPEC
+TYP := COLON [ UNICODE_ID ] | COLON LIST
+SYM := [ UNICODE_ID ] | [ UNICODE_ID ] TYP
 
-ATOM := SYMBOL | LITERAL | NIL
-ITEM := ATOM | LIST | COMMENT
+ITEM := COM | LIT | SYM | NIL | LIST
 LIST := LIST_START [ ITEM ] LIST_END
-SOURCE := [ LIST ]
+SOURCE := [ LIST ] EOF
 ```
