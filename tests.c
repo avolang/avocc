@@ -725,6 +725,191 @@ void test_parse_bol_lit() {
   avoc_item_free(&item);
 }
 
+void test_parse_int_lit() {
+  avoc_source src;
+  avoc_token token;
+  avoc_item item;
+  avoc_status status;
+
+  load_string(&src, "0 1i32 2i64 3u32 4u64");
+  status = avoc_next_token(&src, &token);
+  assert_okb(status == OK);
+  status = avoc_parse_lit(&src, &token, &item);
+  assert_okb(status == OK);
+  assert_eq(item.type, ITEM_LIT_I32);
+  assert_eq(item.as_i32, 0);
+
+  status = avoc_next_token(&src, &token);
+  assert_okb(status == OK);
+  status = avoc_parse_lit(&src, &token, &item);
+  assert_okb(status == OK);
+  assert_eq(item.type, ITEM_LIT_I32);
+  assert_eq(item.as_i32, 1);
+
+  status = avoc_next_token(&src, &token);
+  assert_okb(status == OK);
+  status = avoc_parse_lit(&src, &token, &item);
+  assert_okb(status == OK);
+  assert_eq(item.type, ITEM_LIT_I64);
+  assert_eql(item.as_i64, 2L);
+
+  status = avoc_next_token(&src, &token);
+  assert_okb(status == OK);
+  status = avoc_parse_lit(&src, &token, &item);
+  assert_okb(status == OK);
+  assert_eq(item.type, ITEM_LIT_U32);
+  assert_eq(item.as_u32, 3);
+
+  status = avoc_next_token(&src, &token);
+  assert_okb(status == OK);
+  status = avoc_parse_lit(&src, &token, &item);
+  assert_okb(status == OK);
+  assert_eq(item.type, ITEM_LIT_U64);
+  assert_eql(item.as_u64, 4UL);
+  avoc_source_free(&src);
+
+  load_string(&src, "0b11 0o77 0xFF 0b0i32 0o77i64 0xFFu32");
+  status = avoc_next_token(&src, &token);
+  assert_okb(status == OK);
+  status = avoc_parse_lit(&src, &token, &item);
+  assert_okb(status == OK);
+  assert_eq(item.type, ITEM_LIT_I32);
+  assert_eq(item.as_i32, 3);
+
+  status = avoc_next_token(&src, &token);
+  assert_okb(status == OK);
+  status = avoc_parse_lit(&src, &token, &item);
+  assert_okb(status == OK);
+  assert_eq(item.type, ITEM_LIT_I32);
+  assert_eq(item.as_i32, 077);
+
+  status = avoc_next_token(&src, &token);
+  assert_okb(status == OK);
+  status = avoc_parse_lit(&src, &token, &item);
+  assert_okb(status == OK);
+  assert_eq(item.type, ITEM_LIT_I32);
+  assert_eq(item.as_i32, 0xFF);
+
+  status = avoc_next_token(&src, &token);
+  assert_okb(status == OK);
+  status = avoc_parse_lit(&src, &token, &item);
+  assert_okb(status == OK);
+  assert_eq(item.type, ITEM_LIT_I32);
+  assert_eq(item.as_i32, 0);
+
+  status = avoc_next_token(&src, &token);
+  assert_okb(status == OK);
+  status = avoc_parse_lit(&src, &token, &item);
+  assert_okb(status == OK);
+  assert_eq(item.type, ITEM_LIT_I64);
+  assert_eql(item.as_i64, 077L);
+
+  status = avoc_next_token(&src, &token);
+  assert_okb(status == OK);
+  status = avoc_parse_lit(&src, &token, &item);
+  assert_okb(status == OK);
+  assert_eq(item.type, ITEM_LIT_U32);
+  assert_eq(item.as_u32, 0xFF);
+  avoc_source_free(&src);
+
+  load_string(&src, "-1 -2i32 -0x1 -0x1i64");
+  status = avoc_next_token(&src, &token);
+  assert_okb(status == OK);
+  status = avoc_parse_lit(&src, &token, &item);
+  assert_okb(status == OK);
+  assert_eq(item.type, ITEM_LIT_I32);
+  assert_eq(item.as_i32, -1);
+
+  status = avoc_next_token(&src, &token);
+  assert_okb(status == OK);
+  status = avoc_parse_lit(&src, &token, &item);
+  assert_okb(status == OK);
+  assert_eq(item.type, ITEM_LIT_I32);
+  assert_eq(item.as_i32, -2);
+
+  status = avoc_next_token(&src, &token);
+  assert_okb(status == OK);
+  status = avoc_parse_lit(&src, &token, &item);
+  assert_okb(status == OK);
+  assert_eq(item.type, ITEM_LIT_I32);
+  assert_eq(item.as_i32, -0x1);
+
+  status = avoc_next_token(&src, &token);
+  assert_okb(status == OK);
+  status = avoc_parse_lit(&src, &token, &item);
+  assert_okb(status == OK);
+  assert_eq(item.type, ITEM_LIT_I64);
+  assert_eql(item.as_i64, -0x1L);
+  avoc_source_free(&src);
+}
+
+void test_parse_flt_lit() {
+  avoc_source src;
+  avoc_token token;
+  avoc_item item;
+  avoc_status status;
+
+  load_string(&src, "0.1 .2 3.4f32 .5f64");
+  status = avoc_next_token(&src, &token);
+  assert_okb(status == OK);
+  status = avoc_parse_lit(&src, &token, &item);
+  assert_okb(status == OK);
+  assert_eq(item.type, ITEM_LIT_F32);
+  assert_eqf(item.as_f32, 0.1f);
+
+  status = avoc_next_token(&src, &token);
+  assert_okb(status == OK);
+  status = avoc_parse_lit(&src, &token, &item);
+  assert_okb(status == OK);
+  assert_eq(item.type, ITEM_LIT_F32);
+  assert_eqf(item.as_f32, 0.2f);
+
+  status = avoc_next_token(&src, &token);
+  assert_okb(status == OK);
+  status = avoc_parse_lit(&src, &token, &item);
+  assert_okb(status == OK);
+  assert_eq(item.type, ITEM_LIT_F32);
+  assert_eqf(item.as_f32, 3.4f);
+
+  status = avoc_next_token(&src, &token);
+  assert_okb(status == OK);
+  status = avoc_parse_lit(&src, &token, &item);
+  assert_okb(status == OK);
+  assert_eq(item.type, ITEM_LIT_F64);
+  assert_eqf(item.as_f64, 0.5f);
+  avoc_source_free(&src);
+
+  load_string(&src, "-0.1 -.2 -3.4f32 -.5f64");
+  status = avoc_next_token(&src, &token);
+  assert_okb(status == OK);
+  status = avoc_parse_lit(&src, &token, &item);
+  assert_okb(status == OK);
+  assert_eq(item.type, ITEM_LIT_F32);
+  assert_eqf(item.as_f32, -0.1f);
+
+  status = avoc_next_token(&src, &token);
+  assert_okb(status == OK);
+  status = avoc_parse_lit(&src, &token, &item);
+  assert_okb(status == OK);
+  assert_eq(item.type, ITEM_LIT_F32);
+  assert_eqf(item.as_f32, -0.2f);
+
+  status = avoc_next_token(&src, &token);
+  assert_okb(status == OK);
+  status = avoc_parse_lit(&src, &token, &item);
+  assert_okb(status == OK);
+  assert_eq(item.type, ITEM_LIT_F32);
+  assert_eqf(item.as_f32, -3.4f);
+
+  status = avoc_next_token(&src, &token);
+  assert_okb(status == OK);
+  status = avoc_parse_lit(&src, &token, &item);
+  assert_okb(status == OK);
+  assert_eq(item.type, ITEM_LIT_F64);
+  assert_eqf(item.as_f64, -0.5f);
+  avoc_source_free(&src);
+}
+
 int main(){
   trun("test_source_init_free", test_source_init_free);
   trun("test_source_move_fwd_ascii", test_source_move_fwd_ascii);
@@ -740,6 +925,8 @@ int main(){
   trun("test_token_edge_cases", test_token_edge_cases);
   trun("test_lists", test_lists);
   trun("test_parse_bol_lit", test_parse_bol_lit);
+  trun("test_parse_int_lit", test_parse_int_lit);
+  trun("test_parse_flt_lit", test_parse_flt_lit);
   tresults();
   return 0;
 }

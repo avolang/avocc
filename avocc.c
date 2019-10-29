@@ -101,7 +101,7 @@ void avoc_list_free(avoc_list *list) {
   }
 }
 
-static unsigned utf8_get(avoc_source *src) {
+static int utf8_get(avoc_source *src) {
   return src->buf_pos >= src->buf_len ?
       UTF8_END : (src->buf_data[(src)->buf_pos] & 0xFFu);
 }
@@ -129,7 +129,7 @@ static int utf8_cp_size(int cp) {
 
 static int utf8_next_cp(avoc_source *src) {
   assert(src != NULL);
-  unsigned int c0 = utf8_get(src);
+  int c0 = utf8_get(src);
   if (c0 == UTF8_END || c0 == UTF8_ERROR) {
     return c0;
   }
@@ -423,15 +423,7 @@ avoc_status avoc_parse_lit(avoc_source *src, avoc_token *token, avoc_item *item)
 
   const char *contents = (const char *) src->buf_data + token->offset;
   size_t contents_len = token->length;
-  // char *contents_cpy = NULL;
-  // enum { BASE_BIN, BASE_OCT, BASE_DEC, BASE_HEX } num_base = BASE_DEC;
-  // const int bases[] = {2, 8, 10, 16};
-  // const char *digits[] = {"01", "01234567", "0123456789", "0123456789ABCDE"};
-  // int allow_neg_exp = 1;
-  // int allow_float = 1;
-  // int is_float = 0;
-  // int is_neg = 0;
-  // int has_exp = 0;
+  char *contents_cpy = NULL;
 
   if (token->type == TOKEN_LIT_BOL) {
     item->type = ITEM_LIT_BOL;
@@ -442,6 +434,184 @@ avoc_status avoc_parse_lit(avoc_source *src, avoc_token *token, avoc_item *item)
     } else {
       assert(0 && "should not reach");
     }
+  } else if (token->type == TOKEN_LIT_NUM) {
+    enum { BASE_BIN, BASE_OCT, BASE_DEC, BASE_HEX } num_base = BASE_DEC;
+    const int bases[] = {2, 8, 10, 16};
+    const char *digits[] = {"01", "01234567", "0123456789", "0123456789ABCDEF"};
+    int is_neg = 0;
+    int allow_neg_exp = 1;
+    int allow_float = 1;
+    int is_float = 0;
+    int has_exp = 0;
+
+    item->type = ITEM_LIT_I32;
+    if (contents_len >= 1 && contents[0] == '-') {
+      is_neg = 1;
+      contents += 1;
+      contents_len -= 1;
+    }
+
+    if (contents_len >= 2) {
+      if (strncmp("0b", contents, 2) == 0) {
+        num_base = BASE_BIN;
+        contents += 2;
+        contents_len -= 2;
+        allow_float = 0;
+        allow_neg_exp = 0;
+      } else if (strncmp("0o", contents, 2) == 0) {
+        num_base = BASE_OCT;
+        contents += 2;
+        contents_len -= 2;
+        allow_float = 0;
+      } else if (strncmp("0x", contents, 2) == 0) {
+        num_base = BASE_HEX;
+        contents += 2;
+        contents_len -= 2;
+        allow_float = 0;
+        allow_neg_exp = 0;
+      }
+    }
+
+    for (size_t i = 0; i < contents_len; i++) {
+      char digit = contents[i];
+      if (digit == '.') {
+        if (allow_float && !is_float) {
+          is_float = 1;
+          continue;
+        } else if (is_float) {
+          PRINT_ERROR(src, "repeated floating point for this literal");
+          return FAILED;
+        } else if (!allow_float) {
+          PRINT_ERROR(src, "unexpected floating point for this literal");
+          return FAILED;
+        }
+      }
+
+      if ((digit == 'i' || digit == 'f' || digit == 'u') && (i + 2) < contents_len) {
+        const char *suffix = contents + i;
+        if (strncmp("i32", suffix, 3) == 0) {
+          if (is_float) {
+            PRINT_ERROR(src, "i32 literals cannot have floating point");
+            return FAILED;
+          }
+
+          item->type = ITEM_LIT_I32;
+        } else if (strncmp("i64", suffix, 3) == 0) {
+          if (is_float) {
+            PRINT_ERROR(src, "i64 literals cannot have floating point");
+            return FAILED;
+          }
+
+          item->type = ITEM_LIT_I64;
+        } else if (strncmp("u32", suffix, 3) == 0) {
+          if (is_float) {
+            PRINT_ERROR(src, "u32 literals cannot have floating point");
+            return FAILED;
+          }
+
+          if (is_neg) {
+            PRINT_ERROR(src, "u32 literals cannot have negative sign");
+            return FAILED;
+          }
+
+          item->type = ITEM_LIT_U32;
+        } else if (strncmp("u64", suffix, 3) == 0) {
+          if (is_float) {
+            PRINT_ERROR(src, "u64 literals cannot have floating point");
+            return FAILED;
+          }
+
+          if (is_neg) {
+            PRINT_ERROR(src, "u64 literals cannot have negative sign");
+            return FAILED;
+          }
+
+          item->type = ITEM_LIT_U64;
+        } else if (strncmp("f32", suffix, 3) == 0) {
+          item->type = ITEM_LIT_F32;
+        } else if (strncmp("f64", suffix, 3) == 0) {
+          item->type = ITEM_LIT_F64;
+        } else {
+          PRINT_ERROR(src, "numeric literal suffix invalid or not supported");
+          return FAILED;
+        }
+
+        contents_len -= 3;
+        continue;
+      } else if (digit == 'i' || digit == 'f' || digit == 'u') {
+        PRINT_ERROR(src, "numeric literal is incomplete, invalid suffix");
+        return FAILED;
+      }
+
+      if (digit == 'e') {
+        if (has_exp) {
+          PRINT_ERROR(src, "numeric literal already has an exponent");
+          return FAILED;
+        }
+
+        has_exp = 1;
+        continue;
+      }
+
+      if (digit == '-' && !has_exp) {
+        PRINT_ERROR(src, "numeric literal is already negative");
+        return FAILED;
+      } else if (digit == '-' && has_exp && !allow_neg_exp) {
+        PRINT_ERROR(src, "unexpected negative exponent for this constant");
+        return FAILED;
+      } else if (digit == '-' && has_exp) {
+        continue;
+      }
+
+      if (strchr(digits[num_base], digit) == NULL) {
+        PRINT_ERRORF(src, "invalid char '%c' fot this numeric base", digit);
+        return FAILED;
+      }
+    }
+
+    if (contents_len == 0) {
+      PRINT_ERROR(src, "numeric literal is incomplete, does not contain any digits");
+      return FAILED;
+    }
+
+    if (is_float && item->type != ITEM_LIT_F32 && item->type != ITEM_LIT_F64) {
+      item->type = ITEM_LIT_F32;
+    }
+
+    contents_cpy = calloc(contents_len+1, sizeof(char));
+    memset(contents_cpy, 0L, contents_len+1);
+    memcpy(contents_cpy, contents, contents_len);
+
+    switch (item->type) {
+      case ITEM_LIT_I32:
+        item->as_i32 = (int) strtol(contents_cpy, NULL, bases[num_base]);
+        item->as_i32 = is_neg ? -item->as_i32 : item->as_i32;
+        break;
+      case ITEM_LIT_I64:
+        item->as_i64 = strtol(contents_cpy, NULL, bases[num_base]);
+        item->as_i64 = is_neg ? -item->as_i64 : item->as_i64;
+        break;
+      case ITEM_LIT_U32:
+        item->as_u32 = (unsigned) strtoul(contents_cpy, NULL, bases[num_base]);
+        break;
+      case ITEM_LIT_U64:
+        item->as_u64 = strtoul(contents_cpy, NULL, bases[num_base]);
+        break;
+      case ITEM_LIT_F32:
+        item->as_f32 = strtof(contents_cpy, NULL);
+        item->as_f32 = is_neg ? -item->as_f32 : item->as_f32;
+        break;
+      case ITEM_LIT_F64:
+        item->as_f64 = strtod(contents_cpy, NULL);
+        item->as_f64 = is_neg ? -item->as_f64 : item->as_f64;
+        break;
+      default:
+        free(contents_cpy);
+        assert(0 && "unexpected literal type");
+        return FAILED;
+    }
+
+    free(contents_cpy);
   }
 
   return OK;
