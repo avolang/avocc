@@ -25,28 +25,27 @@ typedef struct _avoc_source {
 // Function result status
 typedef enum { OK, FAILED } avoc_status;
 
+// Token type
+typedef enum {
+  TOKEN_EOF,
+  TOKEN_EOL,
+  TOKEN_COLON,
+  TOKEN_LSTART,
+  TOKEN_LEND,
+  TOKEN_NIL,
+  TOKEN_LIT_NUM,
+  TOKEN_LIT_STR,
+  TOKEN_LIT_BOL,
+  TOKEN_ID,
+  TOKEN_COMMENT,
+} avoc_token_type;
+
 // Token reference
 typedef struct _avoc_token {
-  enum {
-    TOKEN_EOF,
-    TOKEN_EOL,
-    TOKEN_COLON,
-    TOKEN_LSTART,
-    TOKEN_LEND,
-    TOKEN_COMMENT,
-    TOKEN_NIL,
-    TOKEN_LIT,
-    TOKEN_ID,
-  } type;
-
-  enum {
-    LIT_BOL,
-    LIT_NUM,
-    LIT_STR,
-  } lit_type;
-
-  size_t start_pos;
-  size_t length;
+  avoc_token_type type; // Type of this token
+  size_t offset; // Offset
+  size_t length; // Length
+  size_t auxlen; // Auxiliar length (for escaping characters)
 } avoc_token;
 
 struct _avoc_list;
@@ -63,6 +62,7 @@ typedef struct _avoc_item {
     ITEM_LIT_STR,
     ITEM_SYM,
     ITEM_LIST,
+    ITEM_COMMENT,
   } type;
 
   union {
@@ -78,10 +78,11 @@ typedef struct _avoc_item {
     struct _avoc_list *as_list;
   };
 
-  size_t token_pos;
-  size_t token_length;
-  struct _avoc_item *next_sibling;
-  struct _avoc_item *prev_sibling;
+  struct _avoc_list* sym_composed_type; // Composed type definition. i.e. a::(T ...)
+  char *sym_ordinary_type; // Ordinary type definition i.e. a::T
+
+  struct _avoc_item *next_sibling; // when used as item, this is the next element
+  struct _avoc_item *prev_sibling; // when used as item, this is the next element
 } avoc_item;
 
 typedef struct _avoc_list {
@@ -91,11 +92,18 @@ typedef struct _avoc_list {
 } avoc_list;
 
 __attribute__((unused)) static const char *token_type_names[] = {
-    "EOF", "EOL", "COLON", "LSTART", "LEND", "COMMENT", "NIL", "LIT", "ID",
+  "EOF",
+  "EOL",
+  "COLON",
+  "LSTART",
+  "LEND",
+  "NIL",
+  "LIT_NUM",
+  "LIT_STR",
+  "LIT_BOL",
+  "ID",
+  "COMMENT",
 };
-
-__attribute__((unused)) static const char *lit_type_names[] = {"BOL", "NUM",
-                                                               "STR"};
 
 #define UTF8_END (-1)
 #define UTF8_ERROR (-2)
@@ -104,7 +112,7 @@ __attribute__((unused)) static const char *lit_type_names[] = {"BOL", "NUM",
 
 #define PRINT_ERRORF(src, msg, ...)                                            \
   fprintf(stderr, "%s:%ld:%ld: " msg "\n", (src)->name, (src)->row,            \
-          (src)->col, ##__VA_ARGS__)
+          (src)->col, __VA_ARGS__)
 
 #define PRINT_UNEXPECTED_CHAR_ERROR(src, expected, given)                      \
   fprintf(stderr,                                                              \
@@ -151,5 +159,20 @@ void avoc_list_push(avoc_list *dest, avoc_item *item);
 
 // Merges the right list into the left keeping its order as argumented.
 void avoc_list_merge(avoc_list *left, avoc_list *right);
+
+// Parse a literal, such strings, numbers and booleans, out: item.
+avoc_status avoc_parse_lit(avoc_source *src, avoc_token *token, avoc_item *item);
+
+// Parse a symbol, out: item.
+avoc_status avoc_parse_sym(avoc_source *src, avoc_token *token, avoc_item *item);
+
+// Parse an item, such literal, comment, nil or symbol, out: item.
+avoc_status avoc_parse_item(avoc_source *src, avoc_token *token, avoc_item *item);
+
+// Parse a list, out: list.
+avoc_status avoc_parse_list(avoc_source *src, avoc_token *token, avoc_list *list);
+
+// Parse a source.
+avoc_status avoc_parse_source(avoc_source *src, avoc_list *list);
 
 #endif /* AVOCC_H */

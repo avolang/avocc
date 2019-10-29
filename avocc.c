@@ -38,8 +38,7 @@ void avoc_source_init(avoc_source *src, const char *name, const char *buf_data,
 
 void avoc_token_init(avoc_token *token) {
   token->type = TOKEN_EOF;
-  token->lit_type = LIT_BOL;
-  token->start_pos = 0L;
+  token->offset = 0L;
   token->length = 0L;
 }
 
@@ -47,8 +46,6 @@ void avoc_item_init(avoc_item *item) {
   assert(item != NULL);
   item->type = 0;
   item->as_u64 = 0UL;
-  item->token_pos = 0L;
-  item->token_length = 0L;
   item->next_sibling = NULL;
   item->prev_sibling = NULL;
 }
@@ -228,7 +225,7 @@ avoc_status avoc_next_token(avoc_source *src, avoc_token *token) {
   }
 
   int allow_newl = 0;
-  token->start_pos = src->cur_cp_pos;
+  token->offset = src->cur_cp_pos;
   int cp_size = utf8_cp_size(cur);
   if (cp_size == -1) {
     PRINT_ERROR(src, "utf-8 encoding error");
@@ -292,9 +289,7 @@ avoc_status avoc_next_token(avoc_source *src, avoc_token *token) {
 
       return OK;
     case '"':
-      token->type = TOKEN_LIT;
-      token->lit_type = LIT_STR;
-
+      token->type = TOKEN_LIT_STR;
       while ((cur = avoc_source_fwd(src)) != UTF8_END) {
         if (cur == UTF8_ERROR) {
           PRINT_ERROR(src, "utf-8 encoding error");
@@ -357,13 +352,12 @@ avoc_status avoc_next_token(avoc_source *src, avoc_token *token) {
         }
       } while ((cur = avoc_source_fwd(src)) != UTF8_END);
 
-      const char *str_start = (const char *) src->buf_data + token->start_pos;
+      const char *str_start = (const char *) src->buf_data + token->offset;
       const size_t str_len = token->length;
       if (str_len >= 1) {
         if ((strncmp("false", str_start, 5) == 0 && str_len == 5) ||
             (strncmp("true", str_start, 4) == 0 && str_len == 4)) {
-          token->type = TOKEN_LIT;
-          token->lit_type = LIT_BOL;
+          token->type = TOKEN_LIT_BOL;
           return OK;
         }
 
@@ -378,8 +372,7 @@ avoc_status avoc_next_token(avoc_source *src, avoc_token *token) {
             (str_len > 2 && strncmp("0o", str_start, 2) == 0) ||
             (str_len > 2 && strncmp("-.", str_start, 2) == 0 && isdigit(str_start[2])) ||
             (str_len > 1 && (str_start[0] == '.' || str_start[0] == '-') && isdigit(str_start[1])) ) {
-          token->type = TOKEN_LIT;
-          token->lit_type = LIT_NUM;
+          token->type = TOKEN_LIT_NUM;
           return OK;
         }
       }
@@ -420,5 +413,37 @@ void avoc_list_merge(avoc_list *left, avoc_list *right) {
     right->head->prev_sibling = left->tail;
     left->tail = right->tail;
   }
+}
+
+avoc_status avoc_parse_lit(avoc_source *src, avoc_token *token, avoc_item *item) {
+  assert(src != NULL);
+  assert(token != NULL);
+  assert(item != NULL);
+  assert(token->type >= TOKEN_LIT_NUM && token->type <= TOKEN_LIT_BOL);
+
+  const char *contents = (const char *) src->buf_data + token->offset;
+  size_t contents_len = token->length;
+  // char *contents_cpy = NULL;
+  // enum { BASE_BIN, BASE_OCT, BASE_DEC, BASE_HEX } num_base = BASE_DEC;
+  // const int bases[] = {2, 8, 10, 16};
+  // const char *digits[] = {"01", "01234567", "0123456789", "0123456789ABCDE"};
+  // int allow_neg_exp = 1;
+  // int allow_float = 1;
+  // int is_float = 0;
+  // int is_neg = 0;
+  // int has_exp = 0;
+
+  if (token->type == TOKEN_LIT_BOL) {
+    item->type = ITEM_LIT_BOL;
+    if (strncmp("true", contents, 4) == 0 && contents_len == 4) {
+      item->as_bol = 1;
+    } else if (strncmp("false", contents, 5) == 0 && contents_len == 5) {
+      item->as_bol = 0;
+    } else {
+      assert(0 && "should not reach");
+    }
+  }
+
+  return OK;
 }
 
