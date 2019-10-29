@@ -1,0 +1,22 @@
+{
+    "variables": {
+        "target": "bin/avocc_tests"
+    },
+    "modes": {
+        "code": {},
+        "debug": {
+            "setup": [
+                "target create {target}",
+                [ "bp", "set" ]
+            ],
+            "teardown": [
+                [ "bp", "save" ],
+                "target delete"
+            ]
+        }
+    },
+    "breakpoints": {
+        "@ll": [
+        ]
+    }
+}
