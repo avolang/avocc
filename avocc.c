@@ -40,6 +40,7 @@ void avoc_token_init(avoc_token *token) {
   token->type = TOKEN_EOF;
   token->offset = 0L;
   token->length = 0L;
+  token->auxlen = 0L;
 }
 
 void avoc_item_init(avoc_item *item) {
@@ -99,6 +100,33 @@ void avoc_list_free(avoc_list *list) {
   if (list->tail != NULL) {
     free(list->tail);
   }
+}
+
+int utf8_encode(char *dest, unsigned ch) {
+  if (ch < 0x80) {
+    dest[0] = (char) ch;
+    return 1;
+  }
+  if (ch < 0x800) {
+    dest[0] = (ch >> 6) | 0xC0;
+    dest[1] = (ch & 0x3F) | 0x80;
+    return 2;
+  }
+  if (ch < 0x10000) {
+    dest[0] = (ch >> 12) | 0xE0;
+    dest[1] = ((ch >> 6) & 0x3F) | 0x80;
+    dest[2] = (ch & 0x3F) | 0x80;
+    return 3;
+  }
+  if (ch < 0x110000) {
+    dest[0] = (ch >> 18) | 0xF0;
+    dest[1] = ((ch >> 12) & 0x3F) | 0x80;
+    dest[2] = ((ch >> 6) & 0x3F) | 0x80;
+    dest[3] = (ch & 0x3F) | 0x80;
+    return 4;
+  }
+
+  return 0;
 }
 
 static int utf8_get(avoc_source *src) {
@@ -225,6 +253,7 @@ avoc_status avoc_next_token(avoc_source *src, avoc_token *token) {
   }
 
   int allow_newl = 0;
+  int terminator = 0;
   token->offset = src->cur_cp_pos;
   int cp_size = utf8_cp_size(cur);
   if (cp_size == -1) {
@@ -288,15 +317,22 @@ avoc_status avoc_next_token(avoc_source *src, avoc_token *token) {
       }
 
       return OK;
+    case '\'':
+    case '`':
     case '"':
       token->type = TOKEN_LIT_STR;
+      terminator = cur;
+      if (cur == '`') {
+        allow_newl = 1;
+      }
+
       while ((cur = avoc_source_fwd(src)) != UTF8_END) {
         if (cur == UTF8_ERROR) {
           PRINT_ERROR(src, "utf-8 encoding error");
           return FAILED;
         }
 
-        if (cur == '\n') {
+        if (cur == '\n' && !allow_newl) {
           PRINT_ERROR(src, "unterminated string");
           return FAILED;
         }
@@ -307,16 +343,53 @@ avoc_status avoc_next_token(avoc_source *src, avoc_token *token) {
           return FAILED;
         }
 
-        token->length += cp_size;
-        if (cur == '\\' && src->nxt_cp == '"') {
-          avoc_source_fwd(src);
-          token->length += utf8_cp_size('"');
+        if (cur == '\\') {
+          char codebuf[9] = "\0\0\0\0\0\0\0\0\0"; // to convert into int
+          int taken_cps = 0; // how many codepoints takes the escaped char
+          if (src->nxt_cp == terminator || strchr("abefnrtv\\?", src->nxt_cp) != NULL) {
+            taken_cps = 1;
+          } else if (src->nxt_cp == 'x') {
+            taken_cps = 3;
+          } else if (src->nxt_cp == 'u') {
+            taken_cps = 5;
+            if ((src->buf_pos + token->offset + 7) < (src->buf_pos + src->buf_len)) {
+              memcpy(codebuf, (const char *) (src->buf_data + token->offset + 3), 4);
+            }
+          } else if (src->nxt_cp == 'U') {
+            taken_cps = 9;
+            if ((src->buf_pos + token->offset + 11) < (src->buf_pos + src->buf_len)) {
+              memcpy(codebuf, (const char *) (src->buf_data + token->offset + 3), 8);
+            }
+          } else {
+            PRINT_ERRORF(src, "unknown escape sequence: \\%c", src->nxt_cp);
+            return FAILED;
+          }
+
+          // Skip this character '\\'
+          token->length += cp_size;
+
+          // Predict length bases on the codepoint size of the future unescaped character
+          if (codebuf[0] != 0) {
+            int codelen = (int) strtol(codebuf, NULL, 16);
+            token->auxlen += utf8_cp_size(codelen);
+          } else {
+            token->auxlen += cp_size;
+          }
+
+          // Skip number of characters after '\\'
+          for (int i=0;i<taken_cps;i++) {
+            int cp = avoc_source_fwd(src);
+            token->length += utf8_cp_size(cp);
+          }
+
           continue;
+        } else {
+          token->length += cp_size;
+          token->auxlen += cp_size;
         }
 
-        if (src->nxt_cp == '"') {
-          avoc_source_fwd(src);
-          token->length += utf8_cp_size('"'); // Include the trailing '"'
+        if (cur == terminator) {
+          token->auxlen--;
           break;
         }
       }
@@ -327,10 +400,6 @@ avoc_status avoc_next_token(avoc_source *src, avoc_token *token) {
       }
 
       return OK;
-    case '\'':
-    case '`':
-      PRINT_ERROR(src, "string delimited by ` or ' are reserved and not supported yet");
-      return FAILED;
     case '{':
     case '}':
       PRINT_ERROR(src, "lists delimited by curly braces '{}' are not supported yet");
@@ -347,7 +416,7 @@ avoc_status avoc_next_token(avoc_source *src, avoc_token *token) {
         }
 
         token->length += utf8_cp_size(cur);
-        if (src->nxt_cp == ':' || isspace(src->nxt_cp)) {
+        if (strchr(":<([{}])>", src->nxt_cp) != NULL || isspace(src->nxt_cp)) {
           break;
         }
       } while ((cur = avoc_source_fwd(src)) != UTF8_END);
