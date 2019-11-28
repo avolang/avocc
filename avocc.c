@@ -273,15 +273,19 @@ avoc_status avoc_next_token(avoc_source *src, avoc_token *token) {
     case ':':
       token->type = TOKEN_COLON;
       return OK;
-    case '<':
     case '[':
+      token->type = TOKEN_LIST_S;
+      return OK;
+    case ']':
+      token->type = TOKEN_LIST_E;
+      return OK;
+    case '<':
     case '(':
-      token->type = TOKEN_LSTART;
+      token->type = TOKEN_CALL_S;
       return OK;
     case '>':
-    case ']':
     case ')':
-      token->type = TOKEN_LEND;
+      token->type = TOKEN_CALL_E;
       return OK;
     case ';':
       token->type = TOKEN_COMMENT;

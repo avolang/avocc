@@ -27,8 +27,10 @@ EOL := /* New line character */
 UNICODE_ID := /* All characters except terminators space */
 UNICODE_NO_NEWLINE := /* All characters except new line */
 UNICODE := /* All unicode characters */
-LIST_START := '<' | '[' | '('
-LIST_END := '>' | ']' | ')'
+LIST_START := '['
+LIST_END := ']'
+CALL_START := '<' | '('
+CALL_END := '>' | ')'
 
 NIL := 'nil'
 LIT_INT := { '0x' | '0b' | '0o' } [ DIGIT ] { 'i32' | 'i64' }

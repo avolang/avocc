@@ -234,19 +234,19 @@ void test_token_next_singlechar() {
   load_string(&src, "<[(");
   status = avoc_next_token(&src, &token);
   assert_okb(status == OK);
-  assert_eq(token.type, TOKEN_LSTART);
+  assert_eq(token.type, TOKEN_CALL_S);
   assert_eql(token.offset, 0L);
   assert_eql(token.length, 1L);
 
   status = avoc_next_token(&src, &token);
   assert_okb(status == OK);
-  assert_eq(token.type, TOKEN_LSTART);
+  assert_eq(token.type, TOKEN_LIST_S);
   assert_eql(token.offset, 1L);
   assert_eql(token.length, 1L);
 
   status = avoc_next_token(&src, &token);
   assert_okb(status == OK);
-  assert_eq(token.type, TOKEN_LSTART);
+  assert_eq(token.type, TOKEN_CALL_S);
   assert_eql(token.offset, 2L);
   assert_eql(token.length, 1L);
   avoc_source_free(&src);
@@ -254,19 +254,19 @@ void test_token_next_singlechar() {
   load_string(&src, ")]>");
   status = avoc_next_token(&src, &token);
   assert_okb(status == OK);
-  assert_eq(token.type, TOKEN_LEND);
+  assert_eq(token.type, TOKEN_CALL_E);
   assert_eql(token.offset, 0L);
   assert_eql(token.length, 1L);
 
   status = avoc_next_token(&src, &token);
   assert_okb(status == OK);
-  assert_eq(token.type, TOKEN_LEND);
+  assert_eq(token.type, TOKEN_LIST_E);
   assert_eql(token.offset, 1L);
   assert_eql(token.length, 1L);
 
   status = avoc_next_token(&src, &token);
   assert_okb(status == OK);
-  assert_eq(token.type, TOKEN_LEND);
+  assert_eq(token.type, TOKEN_CALL_E);
   assert_eql(token.offset, 2L);
   assert_eql(token.length, 1L);
   avoc_source_free(&src);
