@@ -685,8 +685,149 @@ avoc_status avoc_parse_lit(avoc_source *src, avoc_token *token, avoc_item *item)
     }
 
     free(contents_cpy);
+  } else if (token->type == TOKEN_LIT_STR) {
+    item->type = ITEM_LIT_STR;
+    contents_cpy = calloc(token->auxlen+1, sizeof(char));
+
+    for (size_t i = 1, j = 0; i<token->length-1; i++, j++) {
+      int peek = contents[i];
+      int mask = peek & 0xFF;
+      int skip = 0;
+
+      if ((mask & 0x80) == 0) {
+        skip = 0;
+
+        if (peek == '\\' && i<token->length-2 && contents[0] != '`') {
+          peek = contents[++i];
+          char codebuf[9] = "\0\0\0\0\0\0\0\0\0";
+          int ch = 0;
+          int take = 0;
+
+          switch(peek) {
+             case 'e':
+             case '\\':
+                ch = '\\';
+                break;
+              case 'a':
+                ch = '\a';
+                break;
+              case 'b':
+                ch = '\b';
+                break;
+              case 'f':
+                ch = '\f';
+                break;
+              case 'n':
+                ch = '\n';
+                break;
+              case 'r':
+                ch = '\r';
+                break;
+              case 't':
+                ch = '\t';
+                break;
+              case 'v':
+                ch = '\v';
+                break;
+              case '"':
+                ch = '"';
+                break;
+              case '\'':
+                ch = '\'';
+                break;
+              case 'x':
+                take = 2;
+                break;
+              case 'u':
+                take = 4;
+                break;
+              case 'U':
+                take = 8;
+                break;
+              default:
+                PRINT_ERROR(src, "unknown escape sequence");
+                return FAILED;
+          }
+
+          if (take > 0) {
+            for (int k = 0; k < take; k++) {
+              codebuf[k] = contents[++i];
+            }
+
+            ch = strtol(codebuf, NULL, 16);
+          }
+
+          int cp_size = utf8_encode(contents_cpy+j, ch);
+          j += cp_size - 1;
+          continue;
+        } else if (peek == '\\' && contents[0] != '`') {
+          PRINT_ERROR(src, "unterminated escape sequence");
+          return FAILED;
+        }
+      } else if ((mask & 0xE0) == 0xC0) {
+        skip = 1;
+      } else if ((mask & 0xF0) == 0xE0) {
+        skip = 2;
+      } else if ((mask & 0xF8) == 0xF0) {
+        skip = 3;
+      } else {
+        PRINT_ERROR(src, "utf-8 decode error");
+        return FAILED;
+      }
+
+      contents_cpy[j] = contents[i];
+      for (int k=0;k<skip;k++) {
+        i++;
+        contents_cpy[k] = contents[i];
+      }
+    }
+
+    item->as_str = contents_cpy;
   }
 
   return OK;
+}
+
+avoc_status avoc_parse_sym(avoc_source *src, avoc_token *token, avoc_item *item) {
+  assert(src != NULL);
+  assert(token != NULL);
+  assert(item != NULL);
+  assert(token->type == TOKEN_ID);
+  avoc_status status = OK;
+
+  item->type = ITEM_SYM;
+  item->as_sym = calloc(token->type, sizeof(char)+1);
+  memset(item->as_sym, 0L, token->length+1);
+  memcpy(item->as_sym, src->buf_data + token->offset, token->length);
+
+  status = avoc_next_token(src, token);
+  if (status != OK) {
+    return status;
+  }
+
+  if (token->type == TOKEN_COLON) {
+    do {
+      status = avoc_next_token(src, token);
+      if (status != OK) {
+        return status;
+      }
+    } while (token->type == TOKEN_EOL || token->type == TOKEN_COMMENT);
+
+    if (token->type == TOKEN_ID) {
+      item->sym_ordinary_type = calloc(token->length, sizeof(char));
+      memset(item->sym_ordinary_type, 0L, token->length+1);
+      memcpy(item->sym_ordinary_type, src->buf_data + token->offset, token->length);
+    } else {
+      PRINT_UNEXPECTED_TOKEN_ERROR(src, TOKEN_ID, token->type);
+      return FAILED;
+    }
+
+    status = avoc_next_token(src, token);
+    if (status != OK) {
+      return status;
+    }
+  }
+
+  return status;
 }
 

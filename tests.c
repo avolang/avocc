@@ -937,6 +937,146 @@ void test_parse_flt_lit() {
   avoc_source_free(&src);
 }
 
+void test_parse_str_lit() {
+  avoc_source src;
+  avoc_token token;
+  avoc_item item;
+  avoc_status status;
+
+  load_string(&src, "'str1' \"str2\" `str3`");
+  status = avoc_next_token(&src, &token);
+  assert_okb(status == OK);
+  status = avoc_parse_lit(&src, &token, &item);
+  assert_okb(status == OK);
+  assert_eq(item.type, ITEM_LIT_STR);
+  assert_eqs(item.as_str,"str1");
+
+  status = avoc_next_token(&src, &token);
+  assert_okb(status == OK);
+  status = avoc_parse_lit(&src, &token, &item);
+  assert_okb(status == OK);
+  assert_eq(item.type, ITEM_LIT_STR);
+  assert_eqs(item.as_str,"str2");
+
+  status = avoc_next_token(&src, &token);
+  assert_okb(status == OK);
+  status = avoc_parse_lit(&src, &token, &item);
+  assert_okb(status == OK);
+  assert_eq(item.type, ITEM_LIT_STR);
+  assert_eqs(item.as_str,"str3");
+  avoc_source_free(&src);
+
+  load_string(&src, "'c\\\\c'");
+  status = avoc_next_token(&src, &token);
+  assert_okb(status == OK);
+  status = avoc_parse_lit(&src, &token, &item);
+  assert_okb(status == OK);
+  assert_eq(item.type, ITEM_LIT_STR);
+  assert_eqs(item.as_str, "c\\c");
+  avoc_source_free(&src);
+
+  load_string(&src, "'c\\x0Ac'");
+  status = avoc_next_token(&src, &token);
+  assert_okb(status == OK);
+  status = avoc_parse_lit(&src, &token, &item);
+  assert_okb(status == OK);
+  assert_eq(item.type, ITEM_LIT_STR);
+  assert_eqs(item.as_str, "c\nc");
+  avoc_source_free(&src);
+
+  load_string(&src, "'x \\u00A1 x'");
+  status = avoc_next_token(&src, &token);
+  assert_okb(status == OK);
+  status = avoc_parse_lit(&src, &token, &item);
+  assert_okb(status == OK);
+  assert_eq(item.type, ITEM_LIT_STR);
+  assert_eqs(item.as_str, "x \xC2\xA1 x");
+  avoc_source_free(&src);
+
+  load_string(&src, "'x \\U0001F60A x'");
+  status = avoc_next_token(&src, &token);
+  assert_okb(status == OK);
+  status = avoc_parse_lit(&src, &token, &item);
+  assert_okb(status == OK);
+  assert_eq(item.type, ITEM_LIT_STR);
+  assert_eqs(item.as_str, "x \xF0\x9F\x98\x8A x");
+  avoc_source_free(&src);
+}
+
+void test_parse_sym_no_type() {
+  avoc_source src;
+  avoc_token token;
+  avoc_item item;
+  avoc_status status;
+
+  load_string(&src, "sym1 SYM2 $sym3 \xF0\x9F\xA5\x91");
+  avoc_item_init(&item);
+  status = avoc_next_token(&src, &token);
+  assert_okb(status == OK);
+  status = avoc_parse_sym(&src, &token, &item);
+  assert_okb(status == OK);
+  assert_eq(item.type, ITEM_SYM);
+  assert_eqs(item.as_str,"sym1");
+
+  avoc_item_init(&item);
+  status = avoc_parse_sym(&src, &token, &item);
+  assert_okb(status == OK);
+  assert_eq(item.type, ITEM_SYM);
+  assert_eqs(item.as_str,"SYM2");
+
+  avoc_item_init(&item);
+  status = avoc_parse_sym(&src, &token, &item);
+  assert_okb(status == OK);
+  assert_eq(item.type, ITEM_SYM);
+  assert_eqs(item.as_str,"$sym3");
+
+  avoc_item_init(&item);
+  status = avoc_parse_sym(&src, &token, &item);
+  assert_okb(status == OK);
+  assert_eq(item.type, ITEM_SYM);
+  assert_eqs(item.as_str,"\xF0\x9F\xA5\x91");
+  avoc_source_free(&src);
+}
+
+void test_parse_sym_with_ord_type() {
+  avoc_source src;
+  avoc_token token;
+  avoc_item item;
+  avoc_status status;
+
+  load_string(&src, "sym1:type1 SYM2:TYPE2 $sym3:$type3 \xF0\x9F\xA5\x91:\xF0\x9F\xA5\x91");
+  avoc_item_init(&item);
+  status = avoc_next_token(&src, &token);
+  assert_okb(status == OK);
+  status = avoc_parse_sym(&src, &token, &item);
+  assert_okb(status == OK);
+  assert_eq(item.type, ITEM_SYM);
+  assert_eqs(item.as_str,"sym1");
+  assert_eqs(item.sym_ordinary_type,"type1");
+
+  avoc_item_init(&item);
+  status = avoc_parse_sym(&src, &token, &item);
+  assert_okb(status == OK);
+  assert_eq(item.type, ITEM_SYM);
+  assert_eqs(item.as_str,"SYM2");
+  assert_eqs(item.sym_ordinary_type,"TYPE2");
+
+  avoc_item_init(&item);
+  status = avoc_parse_sym(&src, &token, &item);
+  assert_okb(status == OK);
+  assert_eq(item.type, ITEM_SYM);
+  assert_eqs(item.as_str,"$sym3");
+  assert_eqs(item.sym_ordinary_type,"$type3");
+
+  avoc_item_init(&item);
+  status = avoc_parse_sym(&src, &token, &item);
+  assert_okb(status == OK);
+  assert_eq(item.type, ITEM_SYM);
+  assert_eqs(item.as_str,"\xF0\x9F\xA5\x91");
+  assert_eqs(item.sym_ordinary_type,"\xF0\x9F\xA5\x91");
+  avoc_source_free(&src);
+}
+
 int main(){
   trun("test_source_init_free", test_source_init_free);
   trun("test_source_move_fwd_ascii", test_source_move_fwd_ascii);
@@ -954,6 +1094,9 @@ int main(){
   trun("test_parse_bol_lit", test_parse_bol_lit);
   trun("test_parse_int_lit", test_parse_int_lit);
   trun("test_parse_flt_lit", test_parse_flt_lit);
+  trun("test_parse_str_lit", test_parse_str_lit);
+  trun("test_parse_sym_no_type", test_parse_sym_no_type);
+  trun("test_parse_sym_with_ord_type", test_parse_sym_with_ord_type);
   tresults();
   return 0;
 }
