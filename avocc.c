@@ -755,6 +755,7 @@ avoc_status avoc_parse_lit(avoc_source *src, avoc_token *token, avoc_item *item)
                 break;
               default:
                 PRINT_ERROR(src, "unknown escape sequence");
+                free(contents_cpy);
                 return FAILED;
           }
 
@@ -771,6 +772,7 @@ avoc_status avoc_parse_lit(avoc_source *src, avoc_token *token, avoc_item *item)
           continue;
         } else if (peek == '\\' && contents[0] != '`') {
           PRINT_ERROR(src, "unterminated escape sequence");
+          free(contents_cpy);
           return FAILED;
         }
       } else if ((mask & 0xE0) == 0xC0) {
@@ -781,6 +783,7 @@ avoc_status avoc_parse_lit(avoc_source *src, avoc_token *token, avoc_item *item)
         skip = 3;
       } else {
         PRINT_ERROR(src, "utf-8 decode error");
+        free(contents_cpy);
         return FAILED;
       }
 
@@ -837,9 +840,12 @@ avoc_status avoc_parse_sym(avoc_source *src, avoc_token *token, avoc_item *item)
       memset(item->sym_ordinary_type, 0L, token->length+1);
       memcpy(item->sym_ordinary_type, src->buf_data + token->offset, token->length);
     } else if (token->type == TOKEN_CALL_S) {
-      item->sym_composed_type = malloc(sizeof(avoc_item));
+      item->sym_composed_type = malloc(sizeof(avoc_list));
       avoc_list_init(item->sym_composed_type);
       status = avoc_parse_list(src, token, item->sym_composed_type, TOKEN_CALL_E);
+      if (status != OK) {
+        return status;
+      }
     } else {
       PRINT_UNEXPECTED_TOKEN_ERROR(src, TOKEN_ID, token->type);
       PRINT_UNEXPECTED_TOKEN_ERROR(src, TOKEN_CALL_S, token->type);
@@ -983,6 +989,7 @@ avoc_status avoc_parse_source(avoc_source *src, avoc_list *list) {
 
       status = avoc_parse_list(src, &token, child, TOKEN_CALL_E);
       if (status != OK) {
+        free(child);
         return status;
       }
 
