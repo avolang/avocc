@@ -82,7 +82,8 @@ void avoc_item_free(avoc_item *item) {
     case ITEM_SYM:
       free(item->as_sym);
       break;
-    case ITEM_LIST:
+    case ITEM_CALL:
+    case ITEM_LIT_LST:
       avoc_list_free(item->as_list);
       free(item->as_list);
       break;
@@ -94,10 +95,15 @@ void avoc_item_free(avoc_item *item) {
 void avoc_list_free(avoc_list *list) {
   assert(list != NULL);
   if (list->head != NULL) {
-    free(list->head);
-  }
-
-  if (list->tail != NULL) {
+    avoc_item *cur = list->head;
+    do {
+      avoc_item *nxt = cur->next_sibling;
+      avoc_item_free(cur);
+      free(cur);
+      cur = nxt;
+    } while (cur != NULL);
+  } else if (list->tail != NULL) {
+    avoc_item_free(list->tail);
     free(list->tail);
   }
 }
@@ -492,7 +498,7 @@ avoc_status avoc_parse_lit(avoc_source *src, avoc_token *token, avoc_item *item)
   assert(src != NULL);
   assert(token != NULL);
   assert(item != NULL);
-  assert(token->type >= TOKEN_LIT_NUM && token->type <= TOKEN_LIT_BOL);
+  assert((token->type >= TOKEN_LIT_NUM && token->type <= TOKEN_LIT_BOL) || token->type == TOKEN_LIST_S || token->type == TOKEN_NIL);
 
   const char *contents = (const char *) src->buf_data + token->offset;
   size_t contents_len = token->length;
@@ -507,6 +513,8 @@ avoc_status avoc_parse_lit(avoc_source *src, avoc_token *token, avoc_item *item)
     } else {
       assert(0 && "should not reach");
     }
+
+    return avoc_next_token(src, token);
   } else if (token->type == TOKEN_LIT_NUM) {
     enum { BASE_BIN, BASE_OCT, BASE_DEC, BASE_HEX } num_base = BASE_DEC;
     const int bases[] = {2, 8, 10, 16};
@@ -685,6 +693,7 @@ avoc_status avoc_parse_lit(avoc_source *src, avoc_token *token, avoc_item *item)
     }
 
     free(contents_cpy);
+    return avoc_next_token(src, token);
   } else if (token->type == TOKEN_LIT_STR) {
     item->type = ITEM_LIT_STR;
     contents_cpy = calloc(token->auxlen+1, sizeof(char));
@@ -783,9 +792,19 @@ avoc_status avoc_parse_lit(avoc_source *src, avoc_token *token, avoc_item *item)
     }
 
     item->as_str = contents_cpy;
+    return avoc_next_token(src, token);
+  } else if (token->type == TOKEN_LIST_S) {
+    item->as_list = malloc(sizeof(avoc_list));
+    item->type = ITEM_LIT_LST;
+    avoc_list_init(item->as_list);
+    return avoc_parse_list(src, token, item->as_list, TOKEN_LIST_E);
+  } else if (token->type == TOKEN_NIL) {
+    item->type = ITEM_NIL;
+    return avoc_next_token(src, token);
   }
 
-  return OK;
+  assert(0); // Should not reach
+  return FAILED;
 }
 
 avoc_status avoc_parse_sym(avoc_source *src, avoc_token *token, avoc_item *item) {
@@ -817,8 +836,13 @@ avoc_status avoc_parse_sym(avoc_source *src, avoc_token *token, avoc_item *item)
       item->sym_ordinary_type = calloc(token->length, sizeof(char));
       memset(item->sym_ordinary_type, 0L, token->length+1);
       memcpy(item->sym_ordinary_type, src->buf_data + token->offset, token->length);
+    } else if (token->type == TOKEN_CALL_S) {
+      item->sym_composed_type = malloc(sizeof(avoc_item));
+      avoc_list_init(item->sym_composed_type);
+      status = avoc_parse_list(src, token, item->sym_composed_type, TOKEN_CALL_E);
     } else {
       PRINT_UNEXPECTED_TOKEN_ERROR(src, TOKEN_ID, token->type);
+      PRINT_UNEXPECTED_TOKEN_ERROR(src, TOKEN_CALL_S, token->type);
       return FAILED;
     }
 
@@ -831,3 +855,147 @@ avoc_status avoc_parse_sym(avoc_source *src, avoc_token *token, avoc_item *item)
   return status;
 }
 
+avoc_status avoc_parse_comment(avoc_source *src, avoc_token *token,
+                           avoc_item *item) {
+  assert(src != NULL);
+  assert(token != NULL);
+  assert(item != NULL);
+
+  item->type = ITEM_COMMENT;
+  item->as_str = calloc(token->length, sizeof(char)+1);
+  memset(item->as_str, 0L, token->length+1);
+  memcpy(item->as_str, src->buf_data + token->offset, token->length);
+  return OK;
+}
+
+avoc_status avoc_parse_item(avoc_source *src, avoc_token *token, avoc_item *item) {
+  assert(src != NULL);
+  assert(token != NULL);
+  assert(item != NULL);
+  avoc_status status = OK;
+
+  switch (token->type) {
+    case TOKEN_ID:
+      status = avoc_parse_sym(src, token, item);
+      break;
+    case TOKEN_CALL_S:
+      item->as_list = malloc(sizeof(avoc_list));
+      item->type = ITEM_CALL;
+      avoc_list_init(item->as_list);
+      status = avoc_parse_list(src, token, item->as_list, TOKEN_CALL_E);
+      break;
+    case TOKEN_COMMENT:
+      status = avoc_parse_comment(src, token, item);
+      if (status != OK) {
+        return OK;
+      }
+
+      status = avoc_next_token(src, token);
+      break;
+    case TOKEN_NIL:
+    case TOKEN_LIT_STR:
+    case TOKEN_LIT_NUM:
+    case TOKEN_LIT_BOL:
+    case TOKEN_LIST_S:
+      status = avoc_parse_lit(src, token, item);
+      if (status != OK) {
+        return status;
+      }
+
+      break;
+    default:
+      return FAILED;
+  }
+
+  return status;
+}
+
+avoc_status avoc_parse_list(avoc_source *src, avoc_token *token, avoc_list *list, avoc_token_type term) {
+  assert(src != NULL);
+  assert(token != NULL);
+  assert(list != NULL);
+
+  avoc_status status = avoc_next_token(src, token);
+  if (status != OK) {
+    return status;
+  }
+
+  while (token->type != TOKEN_EOF && token->type != term) {
+    if (token->type == TOKEN_EOL) {
+      status = avoc_next_token(src, token);
+      if (status != OK) {
+        return status;
+      }
+
+      continue;
+    }
+
+    avoc_item *item = malloc(sizeof(avoc_item));
+    avoc_item_init(item);
+
+    status = avoc_parse_item(src, token, item);
+    if (status != OK) {
+      free(item);
+      return status;
+    }
+
+    avoc_list_push(list, item);
+  }
+
+  if (token->type == TOKEN_EOF) {
+    PRINT_UNEXPECTED_TOKEN_ERROR(src, term, token->type);
+    return FAILED;
+  } else {
+    status = avoc_next_token(src, token);
+    if (status != OK) {
+      return status;
+    }
+  }
+
+  return OK;
+}
+
+avoc_status avoc_parse_source(avoc_source *src, avoc_list *list) {
+  assert(src != NULL);
+  assert(list != NULL);
+
+  avoc_token token;
+  avoc_token_init(&token);
+
+  avoc_status status = avoc_next_token(src, &token);
+  if (status != OK) {
+    return status;
+  }
+
+  while (token.type != TOKEN_EOF) {
+    if (token.type == TOKEN_EOL) {
+      status = avoc_next_token(src, &token);
+      if (status != OK) {
+        return status;
+      }
+
+      continue;
+    }
+
+    if (token.type == TOKEN_CALL_S) {
+      avoc_list *child = malloc(sizeof(avoc_list));
+      avoc_list_init(child);
+
+      status = avoc_parse_list(src, &token, child, TOKEN_CALL_E);
+      if (status != OK) {
+        return status;
+      }
+
+      avoc_item *child_item = malloc(sizeof(avoc_item));
+      avoc_item_init(child_item);
+      child_item->type = ITEM_CALL;
+      child_item->as_list = child;
+      avoc_list_push(list, child_item);
+    } else {
+      PRINT_UNEXPECTED_TOKEN_ERROR(src, TOKEN_CALL_E, token.type);
+      return FAILED;
+    }
+  }
+
+  return OK;
+}

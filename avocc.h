@@ -62,8 +62,10 @@ typedef struct _avoc_item {
     ITEM_LIT_F32,
     ITEM_LIT_F64,
     ITEM_LIT_STR,
+    ITEM_LIT_LST,
+    ITEM_NIL,
     ITEM_SYM,
-    ITEM_LIST,
+    ITEM_CALL,
     ITEM_COMMENT,
   } type;
 
@@ -78,6 +80,7 @@ typedef struct _avoc_item {
     char *as_str;
     char *as_sym;
     struct _avoc_list *as_list;
+    struct _avoc_list *as_call;
   };
 
   struct _avoc_list* sym_composed_type; // Composed type definition. i.e. a::(T ...)
@@ -170,11 +173,15 @@ avoc_status avoc_parse_lit(avoc_source *src, avoc_token *token, avoc_item *item)
 // Parse a symbol, out: item.
 avoc_status avoc_parse_sym(avoc_source *src, avoc_token *token, avoc_item *item);
 
+// Parse a comment
+avoc_status avoc_parse_comment(avoc_source *src, avoc_token *token,
+                           avoc_item *item);
+
 // Parse an item, such literal, comment, nil or symbol, out: item.
 avoc_status avoc_parse_item(avoc_source *src, avoc_token *token, avoc_item *item);
 
 // Parse a list, out: list.
-avoc_status avoc_parse_list(avoc_source *src, avoc_token *token, avoc_list *list);
+avoc_status avoc_parse_list(avoc_source *src, avoc_token *token, avoc_list *list, avoc_token_type term);
 
 // Parse a source.
 avoc_status avoc_parse_source(avoc_source *src, avoc_list *list);

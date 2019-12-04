@@ -742,8 +742,6 @@ void test_parse_bol_lit() {
   assert_eq(item.as_bol, 1);
   avoc_item_free(&item);
 
-  status = avoc_next_token(&src, &token);
-  assert_okb(status == OK);
   status = avoc_parse_lit(&src, &token, &item);
   assert_okb(status == OK);
   assert_eq(item.type, ITEM_LIT_BOL);
@@ -766,29 +764,21 @@ void test_parse_int_lit() {
   assert_eq(item.type, ITEM_LIT_I32);
   assert_eq(item.as_i32, 0);
 
-  status = avoc_next_token(&src, &token);
-  assert_okb(status == OK);
   status = avoc_parse_lit(&src, &token, &item);
   assert_okb(status == OK);
   assert_eq(item.type, ITEM_LIT_I32);
   assert_eq(item.as_i32, 1);
 
-  status = avoc_next_token(&src, &token);
-  assert_okb(status == OK);
   status = avoc_parse_lit(&src, &token, &item);
   assert_okb(status == OK);
   assert_eq(item.type, ITEM_LIT_I64);
   assert_eql(item.as_i64, 2L);
 
-  status = avoc_next_token(&src, &token);
-  assert_okb(status == OK);
   status = avoc_parse_lit(&src, &token, &item);
   assert_okb(status == OK);
   assert_eq(item.type, ITEM_LIT_U32);
   assert_eq(item.as_u32, 3);
 
-  status = avoc_next_token(&src, &token);
-  assert_okb(status == OK);
   status = avoc_parse_lit(&src, &token, &item);
   assert_okb(status == OK);
   assert_eq(item.type, ITEM_LIT_U64);
@@ -803,36 +793,26 @@ void test_parse_int_lit() {
   assert_eq(item.type, ITEM_LIT_I32);
   assert_eq(item.as_i32, 3);
 
-  status = avoc_next_token(&src, &token);
-  assert_okb(status == OK);
   status = avoc_parse_lit(&src, &token, &item);
   assert_okb(status == OK);
   assert_eq(item.type, ITEM_LIT_I32);
   assert_eq(item.as_i32, 077);
 
-  status = avoc_next_token(&src, &token);
-  assert_okb(status == OK);
   status = avoc_parse_lit(&src, &token, &item);
   assert_okb(status == OK);
   assert_eq(item.type, ITEM_LIT_I32);
   assert_eq(item.as_i32, 0xFF);
 
-  status = avoc_next_token(&src, &token);
-  assert_okb(status == OK);
   status = avoc_parse_lit(&src, &token, &item);
   assert_okb(status == OK);
   assert_eq(item.type, ITEM_LIT_I32);
   assert_eq(item.as_i32, 0);
 
-  status = avoc_next_token(&src, &token);
-  assert_okb(status == OK);
   status = avoc_parse_lit(&src, &token, &item);
   assert_okb(status == OK);
   assert_eq(item.type, ITEM_LIT_I64);
   assert_eql(item.as_i64, 077L);
 
-  status = avoc_next_token(&src, &token);
-  assert_okb(status == OK);
   status = avoc_parse_lit(&src, &token, &item);
   assert_okb(status == OK);
   assert_eq(item.type, ITEM_LIT_U32);
@@ -847,22 +827,16 @@ void test_parse_int_lit() {
   assert_eq(item.type, ITEM_LIT_I32);
   assert_eq(item.as_i32, -1);
 
-  status = avoc_next_token(&src, &token);
-  assert_okb(status == OK);
   status = avoc_parse_lit(&src, &token, &item);
   assert_okb(status == OK);
   assert_eq(item.type, ITEM_LIT_I32);
   assert_eq(item.as_i32, -2);
 
-  status = avoc_next_token(&src, &token);
-  assert_okb(status == OK);
   status = avoc_parse_lit(&src, &token, &item);
   assert_okb(status == OK);
   assert_eq(item.type, ITEM_LIT_I32);
   assert_eq(item.as_i32, -0x1);
 
-  status = avoc_next_token(&src, &token);
-  assert_okb(status == OK);
   status = avoc_parse_lit(&src, &token, &item);
   assert_okb(status == OK);
   assert_eq(item.type, ITEM_LIT_I64);
@@ -884,22 +858,16 @@ void test_parse_flt_lit() {
   assert_eq(item.type, ITEM_LIT_F32);
   assert_eqf(item.as_f32, 0.1f);
 
-  status = avoc_next_token(&src, &token);
-  assert_okb(status == OK);
   status = avoc_parse_lit(&src, &token, &item);
   assert_okb(status == OK);
   assert_eq(item.type, ITEM_LIT_F32);
   assert_eqf(item.as_f32, 0.2f);
 
-  status = avoc_next_token(&src, &token);
-  assert_okb(status == OK);
   status = avoc_parse_lit(&src, &token, &item);
   assert_okb(status == OK);
   assert_eq(item.type, ITEM_LIT_F32);
   assert_eqf(item.as_f32, 3.4f);
 
-  status = avoc_next_token(&src, &token);
-  assert_okb(status == OK);
   status = avoc_parse_lit(&src, &token, &item);
   assert_okb(status == OK);
   assert_eq(item.type, ITEM_LIT_F64);
@@ -914,22 +882,16 @@ void test_parse_flt_lit() {
   assert_eq(item.type, ITEM_LIT_F32);
   assert_eqf(item.as_f32, -0.1f);
 
-  status = avoc_next_token(&src, &token);
-  assert_okb(status == OK);
   status = avoc_parse_lit(&src, &token, &item);
   assert_okb(status == OK);
   assert_eq(item.type, ITEM_LIT_F32);
   assert_eqf(item.as_f32, -0.2f);
 
-  status = avoc_next_token(&src, &token);
-  assert_okb(status == OK);
   status = avoc_parse_lit(&src, &token, &item);
   assert_okb(status == OK);
   assert_eq(item.type, ITEM_LIT_F32);
   assert_eqf(item.as_f32, -3.4f);
 
-  status = avoc_next_token(&src, &token);
-  assert_okb(status == OK);
   status = avoc_parse_lit(&src, &token, &item);
   assert_okb(status == OK);
   assert_eq(item.type, ITEM_LIT_F64);
@@ -951,15 +913,11 @@ void test_parse_str_lit() {
   assert_eq(item.type, ITEM_LIT_STR);
   assert_eqs(item.as_str,"str1");
 
-  status = avoc_next_token(&src, &token);
-  assert_okb(status == OK);
   status = avoc_parse_lit(&src, &token, &item);
   assert_okb(status == OK);
   assert_eq(item.type, ITEM_LIT_STR);
   assert_eqs(item.as_str,"str2");
 
-  status = avoc_next_token(&src, &token);
-  assert_okb(status == OK);
   status = avoc_parse_lit(&src, &token, &item);
   assert_okb(status == OK);
   assert_eq(item.type, ITEM_LIT_STR);
@@ -1001,6 +959,46 @@ void test_parse_str_lit() {
   assert_eq(item.type, ITEM_LIT_STR);
   assert_eqs(item.as_str, "x \xF0\x9F\x98\x8A x");
   avoc_source_free(&src);
+}
+
+void test_parse_lst_lit() {
+  avoc_source src;
+  avoc_token token;
+  avoc_list list;
+  avoc_status status;
+
+  load_string(&src, "[first second 3]");
+  avoc_list_init(&list);
+  status = avoc_next_token(&src, &token);
+  assert_okb(status == OK);
+  status = avoc_parse_list(&src, &token, &list, TOKEN_LIST_E);
+  assert_okb(status == OK);
+  assert_okb(list.head != NULL);
+  assert_eq(list.head->type, ITEM_SYM);
+  assert_eqs(list.head->as_sym, "first");
+
+  assert_okb(list.head->next_sibling != NULL);
+  assert_eq(list.head->next_sibling->type, ITEM_SYM);
+  assert_eqs(list.head->next_sibling->as_sym, "second");
+
+  assert_okb(list.tail != NULL);
+  assert_eq(list.tail->type, ITEM_LIT_I32);
+  assert_eq(list.tail->as_i32, 3);
+
+  load_string(&src, "[first [second]]");
+  status = avoc_next_token(&src, &token);
+  assert_okb(status == OK);
+  status = avoc_parse_list(&src, &token, &list, TOKEN_LIST_E);
+  assert_okb(status == OK);
+  assert_okb(list.head != NULL);
+  assert_eq(list.head->type, ITEM_SYM);
+  assert_eqs(list.head->as_sym, "first");
+
+  assert_okb(list.tail != NULL);
+  assert_eq(list.tail->type, ITEM_LIT_LST);
+  assert_eq(list.tail->as_list->head->type, ITEM_SYM);
+  assert_eqs(list.tail->as_list->head->as_str, "second");
+  avoc_list_free(&list);
 }
 
 void test_parse_sym_no_type() {
@@ -1077,6 +1075,296 @@ void test_parse_sym_with_ord_type() {
   avoc_source_free(&src);
 }
 
+void test_parse_comment() {
+  avoc_source src;
+  avoc_token token;
+  avoc_item item;
+  avoc_status status;
+
+  load_string(&src, ";; this is a comment ;; ;; another comment ;;");
+  avoc_item_init(&item);
+  status = avoc_next_token(&src, &token);
+  assert_okb(status == OK);
+  status = avoc_parse_comment(&src, &token, &item);
+  assert_okb(status == OK);
+  assert_eq(item.type, ITEM_COMMENT);
+  assert_eqs(item.as_str,";; this is a comment ;;");
+
+  avoc_item_init(&item);
+  status = avoc_next_token(&src, &token);
+  assert_okb(status == OK);
+  status = avoc_parse_comment(&src, &token, &item);
+  assert_okb(status == OK);
+  assert_eq(item.type, ITEM_COMMENT);
+  assert_eqs(item.as_str,";; another comment ;;");
+  avoc_source_free(&src);
+}
+
+void test_parse_item_no_lists() {
+  avoc_source src;
+  avoc_token token;
+  avoc_item item;
+  avoc_status status;
+
+  load_string(&src, "a '1' 2 3.0 ;; 4 ;; %5:%6 7i64");
+  avoc_item_init(&item);
+  status = avoc_next_token(&src, &token);
+  assert_okb(status == OK);
+  status = avoc_parse_item(&src, &token, &item);
+  assert_okb(status == OK);
+  assert_eq(item.type, ITEM_SYM);
+  assert_eqs(item.as_sym, "a");
+
+  status = avoc_parse_item(&src, &token, &item);
+  assert_okb(status == OK);
+  assert_eq(item.type, ITEM_LIT_STR);
+  assert_eqs(item.as_str, "1");
+
+  status = avoc_parse_item(&src, &token, &item);
+  assert_okb(status == OK);
+  assert_eq(item.type, ITEM_LIT_I32);
+  assert_eq(item.as_i32, 2);
+
+  status = avoc_parse_item(&src, &token, &item);
+  assert_okb(status == OK);
+  assert_eq(item.type, ITEM_LIT_F32);
+  assert_eqf(item.as_f32, 3.0f);
+
+  status = avoc_parse_item(&src, &token, &item);
+  assert_okb(status == OK);
+  assert_eq(item.type, ITEM_COMMENT);
+  assert_eqs(item.as_str, ";; 4 ;;");
+
+  status = avoc_parse_item(&src, &token, &item);
+  assert_okb(status == OK);
+  assert_eq(item.type, ITEM_SYM);
+  assert_eqs(item.as_sym, "%5");
+  assert_eqs(item.sym_ordinary_type, "%6");
+
+  status = avoc_parse_item(&src, &token, &item);
+  assert_okb(status == OK);
+  assert_eq(item.type, ITEM_LIT_I64);
+  assert_eql(item.as_i64, 7L);
+  avoc_source_free(&src);
+}
+
+void test_parse_calls() {
+  avoc_source src;
+  avoc_token token;
+  avoc_list list;
+  avoc_status status;
+
+  load_string(&src, "()");
+  avoc_list_init(&list);
+  status = avoc_next_token(&src, &token);
+  assert_okb(status == OK);
+  status = avoc_parse_list(&src, &token, &list, TOKEN_CALL_E);
+  assert_okb(status == OK);
+  assert_okb(list.head == NULL);
+  assert_okb(list.tail == NULL);
+  avoc_list_free(&list);
+
+  load_string(&src, "(first second)");
+  avoc_list_init(&list);
+  status = avoc_next_token(&src, &token);
+  assert_okb(status == OK);
+  status = avoc_parse_list(&src, &token, &list, TOKEN_CALL_E);
+  assert_okb(status == OK);
+  assert_okb(list.head != NULL);
+  assert_eq(list.head->type, ITEM_SYM);
+  assert_eqs(list.head->as_sym, "first");
+
+  assert_okb(list.tail != NULL);
+  assert_eq(list.tail->type, ITEM_SYM);
+  assert_eqs(list.tail->as_sym, "second");
+  avoc_list_free(&list);
+
+  load_string(&src, "(first \n second)");
+  avoc_list_init(&list);
+  status = avoc_next_token(&src, &token);
+  assert_okb(status == OK);
+  status = avoc_parse_list(&src, &token, &list, TOKEN_CALL_E);
+  assert_okb(status == OK);
+  assert_okb(list.head != NULL);
+  assert_eq(list.head->type, ITEM_SYM);
+  assert_eqs(list.head->as_sym, "first");
+
+  assert_okb(list.tail != NULL);
+  assert_eq(list.tail->type, ITEM_SYM);
+  assert_eqs(list.tail->as_sym, "second");
+  avoc_list_free(&list);
+  avoc_source_free(&src);
+
+  load_string(&src, "(\n first \n second \n)");
+  avoc_list_init(&list);
+  status = avoc_next_token(&src, &token);
+  assert_okb(status == OK);
+  status = avoc_parse_list(&src, &token, &list, TOKEN_CALL_E);
+  assert_okb(status == OK);
+  assert_okb(list.head != NULL);
+  assert_eq(list.head->type, ITEM_SYM);
+  assert_eqs(list.head->as_sym, "first");
+
+  assert_okb(list.tail != NULL);
+  assert_eq(list.tail->type, ITEM_SYM);
+  assert_eqs(list.tail->as_sym, "second");
+  avoc_list_free(&list);
+  avoc_source_free(&src);
+
+  load_string(&src, "(first second:third)");
+  avoc_list_init(&list);
+  status = avoc_next_token(&src, &token);
+  assert_okb(status == OK);
+  status = avoc_parse_list(&src, &token, &list, TOKEN_CALL_E);
+  assert_okb(status == OK);
+  assert_okb(list.head != NULL);
+  assert_eq(list.head->type, ITEM_SYM);
+  assert_eqs(list.head->as_sym, "first");
+
+  assert_okb(list.tail != NULL);
+  assert_eq(list.tail->type, ITEM_SYM);
+  assert_eqs(list.tail->as_sym, "second");
+  assert_okb(list.tail->sym_ordinary_type != NULL);
+  assert_eqs(list.tail->sym_ordinary_type, "third");
+  avoc_list_free(&list);
+
+  load_string(&src, "(num 123)");
+  avoc_list_init(&list);
+  status = avoc_next_token(&src, &token);
+  assert_okb(status == OK);
+  status = avoc_parse_list(&src, &token, &list, TOKEN_CALL_E);
+  assert_okb(status == OK);
+  assert_okb(list.head != NULL);
+  assert_eq(list.head->type, ITEM_SYM);
+  assert_eqs(list.head->as_sym, "num");
+
+  assert_okb(list.tail != NULL);
+  assert_eq(list.tail->type, ITEM_LIT_I32);
+  assert_eq(list.tail->as_i32, 123);
+  avoc_list_free(&list);
+  avoc_source_free(&src);
+
+  load_string(&src, "(str 'string')");
+  avoc_list_init(&list);
+  status = avoc_next_token(&src, &token);
+  assert_okb(status == OK);
+  status = avoc_parse_list(&src, &token, &list, TOKEN_CALL_E);
+  assert_okb(status == OK);
+  assert_okb(list.head != NULL);
+  assert_eq(list.head->type, ITEM_SYM);
+  assert_eqs(list.head->as_sym, "str");
+
+  assert_okb(list.tail != NULL);
+  assert_eq(list.tail->type, ITEM_LIT_STR);
+  assert_eqs(list.tail->as_str, "string");
+  avoc_list_free(&list);
+  avoc_source_free(&src);
+
+  load_string(&src, "(parent (child))");
+  avoc_list_init(&list);
+  status = avoc_next_token(&src, &token);
+  assert_okb(status == OK);
+  status = avoc_parse_list(&src, &token, &list, TOKEN_CALL_E);
+  assert_okb(status == OK);
+  assert_okb(list.head != NULL);
+  assert_eq(list.head->type, ITEM_SYM);
+  assert_eqs(list.head->as_sym, "parent");
+
+  assert_okb(list.tail != NULL);
+  assert_okb(list.tail->type == ITEM_CALL);
+  assert_okb(list.tail->as_list->head->type == ITEM_SYM);
+  assert_eqs(list.tail->as_list->head->as_sym, "child");
+  avoc_list_free(&list);
+  avoc_source_free(&src);
+}
+
+void test_parse_sym_with_composed_type() {
+  avoc_source src;
+  avoc_token token;
+  avoc_item item;
+  avoc_status status;
+  avoc_list *type;
+
+  load_string(&src, "sym:(composed type)");
+  avoc_item_init(&item);
+  status = avoc_next_token(&src, &token);
+  assert_okb(status == OK);
+  status = avoc_parse_item(&src, &token, &item);
+  assert_okb(status == OK);
+  assert_eq(item.type, ITEM_SYM);
+  assert_eqs(item.as_sym, "sym");
+
+  assert_okb(item.sym_composed_type != NULL);
+  type = item.sym_composed_type;
+
+  assert_okb(type->head != NULL);
+  assert_eq(type->head->type, ITEM_SYM);
+  assert_eqs(type->head->as_sym, "composed");
+
+  assert_okb(type->tail != NULL);
+  assert_eq(type->tail->type, ITEM_SYM);
+  assert_eqs(type->tail->as_sym, "type");
+  avoc_source_free(&src);
+
+  load_string(&src, "sym:(composed (type))");
+  avoc_item_init(&item);
+  status = avoc_next_token(&src, &token);
+  assert_okb(status == OK);
+  status = avoc_parse_item(&src, &token, &item);
+  assert_okb(status == OK);
+  assert_eq(item.type, ITEM_SYM);
+  assert_eqs(item.as_sym, "sym");
+
+  assert_okb(item.sym_composed_type != NULL);
+  type = item.sym_composed_type;
+
+  assert_okb(type->head != NULL);
+  assert_eq(type->head->type, ITEM_SYM);
+  assert_eqs(type->head->as_sym, "composed");
+
+  assert_okb(type->tail != NULL);
+  assert_eq(type->tail->type, ITEM_CALL);
+  assert_okb(type->tail->as_list->head->type == ITEM_SYM);
+  assert_eqs(type->tail->as_list->head->as_sym, "type");
+  avoc_source_free(&src);
+}
+
+void test_parse_source() {
+  avoc_source src;
+  avoc_list list;
+  avoc_status status;
+
+  load_string(&src, "");
+  avoc_list_init(&list);
+  status = avoc_parse_source(&src, &list);
+  assert_okb(status == OK);
+  assert_okb(list.head == NULL);
+  assert_okb(list.tail == NULL);
+  avoc_list_free(&list);
+  avoc_source_free(&src);
+
+  load_string(&src, "(1) (2)");
+  avoc_list_init(&list);
+  status = avoc_parse_source(&src, &list);
+  assert_okb(status == OK);
+  assert_okb(list.head->type == ITEM_CALL);
+  assert_okb(list.head->as_list->head->type == ITEM_LIT_I32);
+  assert_eq(list.head->as_list->head->as_i32, 1);
+  avoc_list_free(&list);
+  avoc_source_free(&src);
+
+  load_string(&src, "(1) \n (2)");
+  avoc_list_init(&list);
+  status = avoc_parse_source(&src, &list);
+  assert_okb(status == OK);
+  assert_okb(list.head->type == ITEM_CALL);
+  assert_okb(list.head->as_list->head->type == ITEM_LIT_I32);
+  assert_eq(list.head->as_list->head->as_i32, 1);
+  avoc_list_free(&list);
+  avoc_source_free(&src);
+}
+
+
 int main(){
   trun("test_source_init_free", test_source_init_free);
   trun("test_source_move_fwd_ascii", test_source_move_fwd_ascii);
@@ -1095,8 +1383,13 @@ int main(){
   trun("test_parse_int_lit", test_parse_int_lit);
   trun("test_parse_flt_lit", test_parse_flt_lit);
   trun("test_parse_str_lit", test_parse_str_lit);
+  trun("test_parse_lst_lit", test_parse_lst_lit);
   trun("test_parse_sym_no_type", test_parse_sym_no_type);
   trun("test_parse_sym_with_ord_type", test_parse_sym_with_ord_type);
+  trun("test_parse_item_no_lists", test_parse_item_no_lists);
+  trun("test_parse_lists", test_parse_calls);
+  trun("test_parse_sym_with_composed_type", test_parse_sym_with_composed_type);
+  trun("test_parse_source", test_parse_source);
   tresults();
   return 0;
 }
