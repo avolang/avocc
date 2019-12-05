@@ -10,15 +10,14 @@ workflows:
          requires:
            - tests
 jobs:
-  style:
+  lint:
     docker:
       - image: gcc:9
     parallelism: 1
     steps:
       - run: apt-get update && apt-get install clang-tidy -y
       - checkout
-      - run: clang-tidy *.h *.c --
-      - run: test -z "$(git status --porcelain)"
+      - run: [[ $(clang-tidy *.h *.c) ]] && exit 1
 
   tests:
     docker:
