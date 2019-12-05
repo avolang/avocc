@@ -1,3 +1,4 @@
+---
 version: 2
 
 workflows:
@@ -7,17 +8,17 @@ workflows:
       - style
       - tests
       - memchecks:
-         requires:
-           - tests
+          requires:
+            - tests
 jobs:
   lint:
     docker:
       - image: gcc:9
     parallelism: 1
     steps:
-      - run: apt-get update && apt-get install clang-tidy -y
+      - run: "apt-get update && apt-get install clang-tidy -y"
       - checkout
-      - run: [[ $(clang-tidy *.h *.c) ]] && exit 1
+      - run: "[[ $(clang-tidy *.h *.c) ]] && exit 1"
 
   tests:
     docker:
@@ -31,11 +32,17 @@ jobs:
             - "avocc_tests"
 
   memchecks:
-      docker:
-        - image: gcc:9
-      steps:
-        - attach_workspace:
-            at: bin
-        - run: ls -la bin
-        - run: apt-get update && apt-get install valgrind -y
-        - run: G_DEBUG=gc-friendly valgrind -v --tool=memcheck --error-exitcode=1 --leak-check=full --num-callers=40 bin/avocc_tests
+    docker:
+      - image: gcc:9
+    steps:
+      - attach_workspace:
+          at: bin
+      - run: "ls -la bin"
+      - run: "apt-get update && apt-get install valgrind -y"
+      - run: >
+          G_DEBUG=gc-friendly valgrind -v \
+            --tool=memcheck \
+            --error-exitcode=1 \
+            --leak-check=full \
+            --num-callers=40 \
+            bin/avocc_tests
