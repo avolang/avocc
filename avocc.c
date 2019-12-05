@@ -49,6 +49,8 @@ void avoc_item_init(avoc_item *item) {
   item->as_u64 = 0UL;
   item->next_sibling = NULL;
   item->prev_sibling = NULL;
+  item->sym_ordinary_type = NULL;
+  item->sym_composed_type = NULL;
 }
 
 void avoc_list_init(avoc_list *list) {
@@ -74,12 +76,23 @@ void avoc_source_free(avoc_source *src) {
 
 void avoc_item_free(avoc_item *item) {
   assert(item != NULL);
+
   // all of those are the same, but let's keep it named
   switch (item->type) {
+    case ITEM_COMMENT:
     case ITEM_LIT_STR:
       free(item->as_str);
       break;
     case ITEM_SYM:
+      if (item->sym_ordinary_type != NULL) {
+        free(item->sym_ordinary_type);
+      }
+
+      if (item->sym_composed_type != NULL) {
+        avoc_list_free(item->sym_composed_type);
+        free(item->sym_composed_type);
+      }
+
       free(item->as_sym);
       break;
     case ITEM_CALL:
@@ -362,14 +375,10 @@ avoc_status avoc_next_token(avoc_source *src, avoc_token *token) {
             taken_cps = 3;
           } else if (src->nxt_cp == 'u') {
             taken_cps = 5;
-            if ((src->buf_pos + token->offset + 7) < (src->buf_pos + src->buf_len)) {
-              memcpy(codebuf, (const char *) (src->buf_data + token->offset + 3), 4);
-            }
+            memcpy(codebuf, (const char *) (src->buf_data + src->buf_pos), 4);
           } else if (src->nxt_cp == 'U') {
             taken_cps = 9;
-            if ((src->buf_pos + token->offset + 11) < (src->buf_pos + src->buf_len)) {
-              memcpy(codebuf, (const char *) (src->buf_data + token->offset + 3), 8);
-            }
+            memcpy(codebuf, (const char *) (src->buf_data + src->buf_pos), 8);
           } else {
             PRINT_ERRORF(src, "unknown escape sequence: \\%c", src->nxt_cp);
             return FAILED;
@@ -836,7 +845,7 @@ avoc_status avoc_parse_sym(avoc_source *src, avoc_token *token, avoc_item *item)
     } while (token->type == TOKEN_EOL || token->type == TOKEN_COMMENT);
 
     if (token->type == TOKEN_ID) {
-      item->sym_ordinary_type = calloc(token->length, sizeof(char));
+      item->sym_ordinary_type = calloc(token->length+1, sizeof(char));
       memset(item->sym_ordinary_type, 0L, token->length+1);
       memcpy(item->sym_ordinary_type, src->buf_data + token->offset, token->length);
     } else if (token->type == TOKEN_CALL_S) {
@@ -844,6 +853,7 @@ avoc_status avoc_parse_sym(avoc_source *src, avoc_token *token, avoc_item *item)
       avoc_list_init(item->sym_composed_type);
       status = avoc_parse_list(src, token, item->sym_composed_type, TOKEN_CALL_E);
       if (status != OK) {
+        free(item->sym_composed_type);
         return status;
       }
     } else {
