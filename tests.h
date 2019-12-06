@@ -34,9 +34,9 @@ __attribute__((unused)) static int tfails = 0;
     const int tt = ttotal;                                                     \
     const int tf = tfails;                                                     \
     const clock_t start = clock();                                             \
-    printf("\t%-20s ", name);                                                   \
+    printf("\t%-20s ", name);                                                  \
     func();                                                                    \
-    printf("pass:%3d fail:%3d %4dms\n", (ttotal - tt) - (tfails - tf),        \
+    printf("pass:%3d fail:%3d %4dms\n", (ttotal - tt) - (tfails - tf),         \
            tfails - tf, (int)((clock() - start) * 1000 / CLOCKS_PER_SEC));     \
   } while (0)
 
