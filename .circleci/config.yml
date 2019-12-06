@@ -16,9 +16,11 @@ jobs:
       - image: gcc:9
     parallelism: 1
     steps:
-      - run: "apt-get update && apt-get install clang-tidy -y"
+      - run: "apt-get update && apt-get install clang-tidy clang-format -y"
       - checkout
-      - run: "[[ $(clang-tidy *.h *.c) ]] && exit 1"
+      - run: clang-format -style=LLVM -i *.h *.c
+      - run: test -z "$(git status --porcelain)"
+      - run: "[[ $(clang-tidy *.h *.c --) ]] && exit 1"
 
   tests:
     docker:

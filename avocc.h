@@ -45,9 +45,9 @@ typedef enum {
 // Token reference
 typedef struct _avoc_token {
   avoc_token_type type; // Type of this token
-  size_t offset; // Offset
-  size_t length; // Length
-  size_t auxlen; // Auxiliar length (for escaping characters)
+  size_t offset;        // Offset
+  size_t length;        // Length
+  size_t auxlen;        // Auxiliar length (for escaping characters)
 } avoc_token;
 
 struct _avoc_list;
@@ -83,11 +83,14 @@ typedef struct _avoc_item {
     struct _avoc_list *as_call;
   };
 
-  struct _avoc_list* sym_composed_type; // Composed type definition. i.e. a::(T ...)
+  struct _avoc_list
+      *sym_composed_type;  // Composed type definition. i.e. a::(T ...)
   char *sym_ordinary_type; // Ordinary type definition i.e. a::T
 
-  struct _avoc_item *next_sibling; // when used as item, this is the next element
-  struct _avoc_item *prev_sibling; // when used as item, this is the next element
+  struct _avoc_item
+      *next_sibling; // when used as item, this is the next element
+  struct _avoc_item
+      *prev_sibling; // when used as item, this is the next element
 } avoc_item;
 
 typedef struct _avoc_list {
@@ -97,19 +100,9 @@ typedef struct _avoc_list {
 } avoc_list;
 
 __attribute__((unused)) static const char *token_type_names[] = {
-  "EOF",
-  "EOL",
-  "COLON",
-  "TOKEN_LIST_S",
-  "TOKEN_LIST_E",
-  "TOKEN_CALL_S",
-  "TOKEN_CALL_E",
-  "NIL",
-  "LIT_NUM",
-  "LIT_STR",
-  "LIT_BOL",
-  "ID",
-  "COMMENT",
+    "EOF",          "EOL",          "COLON",   "TOKEN_LIST_S", "TOKEN_LIST_E",
+    "TOKEN_CALL_S", "TOKEN_CALL_E", "NIL",     "LIT_NUM",      "LIT_STR",
+    "LIT_BOL",      "ID",           "COMMENT",
 };
 
 #define UTF8_END (-1)
@@ -168,20 +161,24 @@ void avoc_list_push(avoc_list *dest, avoc_item *item);
 void avoc_list_merge(avoc_list *left, avoc_list *right);
 
 // Parse a literal, such strings, numbers and booleans, out: item.
-avoc_status avoc_parse_lit(avoc_source *src, avoc_token *token, avoc_item *item);
+avoc_status avoc_parse_lit(avoc_source *src, avoc_token *token,
+                           avoc_item *item);
 
 // Parse a symbol, out: item.
-avoc_status avoc_parse_sym(avoc_source *src, avoc_token *token, avoc_item *item);
+avoc_status avoc_parse_sym(avoc_source *src, avoc_token *token,
+                           avoc_item *item);
 
 // Parse a comment
 avoc_status avoc_parse_comment(avoc_source *src, avoc_token *token,
-                           avoc_item *item);
+                               avoc_item *item);
 
 // Parse an item, such literal, comment, nil or symbol, out: item.
-avoc_status avoc_parse_item(avoc_source *src, avoc_token *token, avoc_item *item);
+avoc_status avoc_parse_item(avoc_source *src, avoc_token *token,
+                            avoc_item *item);
 
 // Parse a list, out: list.
-avoc_status avoc_parse_list(avoc_source *src, avoc_token *token, avoc_list *list, avoc_token_type term);
+avoc_status avoc_parse_list(avoc_source *src, avoc_token *token,
+                            avoc_list *list, avoc_token_type term);
 
 // Parse a source.
 avoc_status avoc_parse_source(avoc_source *src, avoc_list *list);

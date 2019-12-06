@@ -27,7 +27,7 @@ void avoc_source_init(avoc_source *src, const char *name, const char *buf_data,
   src->col = 1L;
 
   if (name != NULL) {
-    size_t name_len = strlen(name)+1;
+    size_t name_len = strlen(name) + 1;
     src->name = calloc(name_len, sizeof(char));
     memset(src->name, 0L, name_len);
     memcpy(src->name, name, name_len);
@@ -79,29 +79,29 @@ void avoc_item_free(avoc_item *item) {
 
   // all of those are the same, but let's keep it named
   switch (item->type) {
-    case ITEM_COMMENT:
-    case ITEM_LIT_STR:
-      free(item->as_str);
-      break;
-    case ITEM_SYM:
-      if (item->sym_ordinary_type != NULL) {
-        free(item->sym_ordinary_type);
-      }
+  case ITEM_COMMENT:
+  case ITEM_LIT_STR:
+    free(item->as_str);
+    break;
+  case ITEM_SYM:
+    if (item->sym_ordinary_type != NULL) {
+      free(item->sym_ordinary_type);
+    }
 
-      if (item->sym_composed_type != NULL) {
-        avoc_list_free(item->sym_composed_type);
-        free(item->sym_composed_type);
-      }
+    if (item->sym_composed_type != NULL) {
+      avoc_list_free(item->sym_composed_type);
+      free(item->sym_composed_type);
+    }
 
-      free(item->as_sym);
-      break;
-    case ITEM_CALL:
-    case ITEM_LIT_LST:
-      avoc_list_free(item->as_list);
-      free(item->as_list);
-      break;
-    default:
-      break;
+    free(item->as_sym);
+    break;
+  case ITEM_CALL:
+  case ITEM_LIT_LST:
+    avoc_list_free(item->as_list);
+    free(item->as_list);
+    break;
+  default:
+    break;
   }
 }
 
@@ -123,7 +123,7 @@ void avoc_list_free(avoc_list *list) {
 
 int utf8_encode(char *dest, unsigned ch) {
   if (ch < 0x80) {
-    dest[0] = (char) ch;
+    dest[0] = (char)ch;
     return 1;
   }
   if (ch < 0x800) {
@@ -149,15 +149,14 @@ int utf8_encode(char *dest, unsigned ch) {
 }
 
 static int utf8_get(avoc_source *src) {
-  return src->buf_pos >= src->buf_len ?
-      UTF8_END : (src->buf_data[(src)->buf_pos] & 0xFFu);
+  return src->buf_pos >= src->buf_len ? UTF8_END
+                                      : (src->buf_data[(src)->buf_pos] & 0xFFu);
 }
 
 static unsigned utf8_cont(avoc_source *src) {
   src->buf_pos++;
   unsigned int c = utf8_get(src);
-  return ((c & 0xC0u) == 0x80u) ?
-    (c & 0x3Fu) : UTF8_ERROR;
+  return ((c & 0xC0u) == 0x80u) ? (c & 0x3Fu) : UTF8_ERROR;
 }
 
 static int utf8_cp_size(int cp) {
@@ -171,7 +170,7 @@ static int utf8_cp_size(int cp) {
   } else if (cp > 65535 && cp <= 1114111) {
     len = 4;
   }
-   return len;
+  return len;
 }
 
 static int utf8_next_cp(avoc_source *src) {
@@ -202,7 +201,7 @@ static int utf8_next_cp(avoc_source *src) {
         return r;
       }
     }
-  // With two continuations (2047, 55295] and (57344, 65535]
+    // With two continuations (2047, 55295] and (57344, 65535]
   } else if ((c0 & 0xF0u) == 0xE0u) {
     c1 = utf8_cont(src);
     c2 = utf8_cont(src);
@@ -213,7 +212,7 @@ static int utf8_next_cp(avoc_source *src) {
         return r;
       }
     }
-  // With three continuations [65536, 1114111]
+    // With three continuations [65536, 1114111]
   } else if ((c0 & 0xF8u) == 0xF0u) {
     c1 = utf8_cont(src);
     c2 = utf8_cont(src);
@@ -250,10 +249,10 @@ int avoc_source_fwd(avoc_source *src) {
   }
 
   if (src->cur_cp == '\n') {
-    src->row ++;
+    src->row++;
     src->col = 1L;
   } else {
-    src->col ++;
+    src->col++;
   }
 
   return src->cur_cp;
@@ -282,191 +281,196 @@ avoc_status avoc_next_token(avoc_source *src, avoc_token *token) {
   token->length += cp_size;
 
   switch (cur) {
-    case UTF8_END:
-      token->type = TOKEN_EOF;
-      token->length = 0L;
-      return OK;
-    case '\n':
-      token->type = TOKEN_EOL;
-      return OK;
-    case ':':
-      token->type = TOKEN_COLON;
-      return OK;
-    case '[':
-      token->type = TOKEN_LIST_S;
-      return OK;
-    case ']':
-      token->type = TOKEN_LIST_E;
-      return OK;
-    case '<':
-    case '(':
-      token->type = TOKEN_CALL_S;
-      return OK;
-    case '>':
-    case ')':
-      token->type = TOKEN_CALL_E;
-      return OK;
-    case ';':
-      token->type = TOKEN_COMMENT;
-      allow_newl = src->nxt_cp == ';';
+  case UTF8_END:
+    token->type = TOKEN_EOF;
+    token->length = 0L;
+    return OK;
+  case '\n':
+    token->type = TOKEN_EOL;
+    return OK;
+  case ':':
+    token->type = TOKEN_COLON;
+    return OK;
+  case '[':
+    token->type = TOKEN_LIST_S;
+    return OK;
+  case ']':
+    token->type = TOKEN_LIST_E;
+    return OK;
+  case '<':
+  case '(':
+    token->type = TOKEN_CALL_S;
+    return OK;
+  case '>':
+  case ')':
+    token->type = TOKEN_CALL_E;
+    return OK;
+  case ';':
+    token->type = TOKEN_COMMENT;
+    allow_newl = src->nxt_cp == ';';
 
-      while ((cur = avoc_source_fwd(src)) != UTF8_END) {
-        if (cur == UTF8_ERROR) {
-          PRINT_ERROR(src, "utf-8 encoding error");
-          return FAILED;
-        }
-
-        cp_size = utf8_cp_size(cur);
-        if (cp_size == -1) {
-          PRINT_ERROR(src, "utf-8 encoding error");
-          return FAILED;
-        }
-
-        token->length += cp_size;
-        if (cur == '\n' && !allow_newl) {
-          break;
-        }
-
-        if (cur == ';' && src->nxt_cp == ';' && allow_newl) {
-          token->length += cp_size;
-          avoc_source_fwd(src);
-          break;
-        }
-      }
-
-      if (cur == UTF8_END && !allow_newl) {
-        PRINT_ERROR(src, "unterminated comment");
+    while ((cur = avoc_source_fwd(src)) != UTF8_END) {
+      if (cur == UTF8_ERROR) {
+        PRINT_ERROR(src, "utf-8 encoding error");
         return FAILED;
       }
 
-      return OK;
-    case '\'':
-    case '`':
-    case '"':
-      token->type = TOKEN_LIT_STR;
-      terminator = cur;
-      if (cur == '`') {
-        allow_newl = 1;
+      cp_size = utf8_cp_size(cur);
+      if (cp_size == -1) {
+        PRINT_ERROR(src, "utf-8 encoding error");
+        return FAILED;
       }
 
-      while ((cur = avoc_source_fwd(src)) != UTF8_END) {
-        if (cur == UTF8_ERROR) {
-          PRINT_ERROR(src, "utf-8 encoding error");
-          return FAILED;
-        }
-
-        if (cur == '\n' && !allow_newl) {
-          PRINT_ERROR(src, "unterminated string");
-          return FAILED;
-        }
-
-        cp_size = utf8_cp_size(cur);
-        if (cp_size == -1) {
-          PRINT_ERROR(src, "utf-8 encoding error");
-          return FAILED;
-        }
-
-        if (cur == '\\') {
-          char codebuf[9] = "\0\0\0\0\0\0\0\0\0"; // to convert into int
-          int taken_cps = 0; // how many codepoints takes the escaped char
-          if (src->nxt_cp == terminator || strchr("abefnrtv\\?", src->nxt_cp) != NULL) {
-            taken_cps = 1;
-          } else if (src->nxt_cp == 'x') {
-            taken_cps = 3;
-          } else if (src->nxt_cp == 'u') {
-            taken_cps = 5;
-            memcpy(codebuf, (const char *) (src->buf_data + src->buf_pos), 4);
-          } else if (src->nxt_cp == 'U') {
-            taken_cps = 9;
-            memcpy(codebuf, (const char *) (src->buf_data + src->buf_pos), 8);
-          } else {
-            PRINT_ERRORF(src, "unknown escape sequence: \\%c", src->nxt_cp);
-            return FAILED;
-          }
-
-          // Skip this character '\\'
-          token->length += cp_size;
-
-          // Predict length bases on the codepoint size of the future unescaped character
-          if (codebuf[0] != 0) {
-            int codelen = (int) strtol(codebuf, NULL, 16);
-            token->auxlen += utf8_cp_size(codelen);
-          } else {
-            token->auxlen += cp_size;
-          }
-
-          // Skip number of characters after '\\'
-          for (int i=0;i<taken_cps;i++) {
-            int cp = avoc_source_fwd(src);
-            token->length += utf8_cp_size(cp);
-          }
-
-          continue;
-        } else {
-          token->length += cp_size;
-          token->auxlen += cp_size;
-        }
-
-        if (cur == terminator) {
-          token->auxlen--;
-          break;
-        }
+      token->length += cp_size;
+      if (cur == '\n' && !allow_newl) {
+        break;
       }
 
-      if (cur == UTF8_END) {
+      if (cur == ';' && src->nxt_cp == ';' && allow_newl) {
+        token->length += cp_size;
+        avoc_source_fwd(src);
+        break;
+      }
+    }
+
+    if (cur == UTF8_END && !allow_newl) {
+      PRINT_ERROR(src, "unterminated comment");
+      return FAILED;
+    }
+
+    return OK;
+  case '\'':
+  case '`':
+  case '"':
+    token->type = TOKEN_LIT_STR;
+    terminator = cur;
+    if (cur == '`') {
+      allow_newl = 1;
+    }
+
+    while ((cur = avoc_source_fwd(src)) != UTF8_END) {
+      if (cur == UTF8_ERROR) {
+        PRINT_ERROR(src, "utf-8 encoding error");
+        return FAILED;
+      }
+
+      if (cur == '\n' && !allow_newl) {
         PRINT_ERROR(src, "unterminated string");
         return FAILED;
       }
 
-      return OK;
-    case '{':
-    case '}':
-      PRINT_ERROR(src, "lists delimited by curly braces '{}' are not supported yet");
-      return FAILED;
-    case UTF8_ERROR:
-      PRINT_ERROR(src, "utf-8 encoding error");
-      return FAILED;
-    default:
-      token->length = 0L;
-      do {
-        if (cur == UTF8_ERROR) {
-          PRINT_ERROR(src, "utf-8 encoding error");
+      cp_size = utf8_cp_size(cur);
+      if (cp_size == -1) {
+        PRINT_ERROR(src, "utf-8 encoding error");
+        return FAILED;
+      }
+
+      if (cur == '\\') {
+        char codebuf[9] = "\0\0\0\0\0\0\0\0\0"; // to convert into int
+        int taken_cps = 0; // how many codepoints takes the escaped char
+        if (src->nxt_cp == terminator ||
+            strchr("abefnrtv\\?", src->nxt_cp) != NULL) {
+          taken_cps = 1;
+        } else if (src->nxt_cp == 'x') {
+          taken_cps = 3;
+        } else if (src->nxt_cp == 'u') {
+          taken_cps = 5;
+          memcpy(codebuf, (const char *)(src->buf_data + src->buf_pos), 4);
+        } else if (src->nxt_cp == 'U') {
+          taken_cps = 9;
+          memcpy(codebuf, (const char *)(src->buf_data + src->buf_pos), 8);
+        } else {
+          PRINT_ERRORF(src, "unknown escape sequence: \\%c", src->nxt_cp);
           return FAILED;
         }
 
-        token->length += utf8_cp_size(cur);
-        if (strchr(":<([{}])>", src->nxt_cp) != NULL || isspace(src->nxt_cp)) {
-          break;
-        }
-      } while ((cur = avoc_source_fwd(src)) != UTF8_END);
+        // Skip this character '\\'
+        token->length += cp_size;
 
-      const char *str_start = (const char *) src->buf_data + token->offset;
-      const size_t str_len = token->length;
-      if (str_len >= 1) {
-        if ((strncmp("false", str_start, 5) == 0 && str_len == 5) ||
-            (strncmp("true", str_start, 4) == 0 && str_len == 4)) {
-          token->type = TOKEN_LIT_BOL;
-          return OK;
+        // Predict length bases on the codepoint size of the future unescaped
+        // character
+        if (codebuf[0] != 0) {
+          int codelen = (int)strtol(codebuf, NULL, 16);
+          token->auxlen += utf8_cp_size(codelen);
+        } else {
+          token->auxlen += cp_size;
         }
 
-        if (strncmp("nil", str_start, 3) == 0 && str_len == 3) {
-          token->type = TOKEN_NIL;
-          return OK;
+        // Skip number of characters after '\\'
+        for (int i = 0; i < taken_cps; i++) {
+          int cp = avoc_source_fwd(src);
+          token->length += utf8_cp_size(cp);
         }
 
-        if (isdigit(str_start[0]) ||
-            (str_len > 2 && strncmp("0x", str_start, 2) == 0) ||
-            (str_len > 2 && strncmp("0b", str_start, 2) == 0) ||
-            (str_len > 2 && strncmp("0o", str_start, 2) == 0) ||
-            (str_len > 2 && strncmp("-.", str_start, 2) == 0 && isdigit(str_start[2])) ||
-            (str_len > 1 && (str_start[0] == '.' || str_start[0] == '-') && isdigit(str_start[1])) ) {
-          token->type = TOKEN_LIT_NUM;
-          return OK;
-        }
+        continue;
+      } else {
+        token->length += cp_size;
+        token->auxlen += cp_size;
       }
 
-      token->type = TOKEN_ID;
-      break;
+      if (cur == terminator) {
+        token->auxlen--;
+        break;
+      }
+    }
+
+    if (cur == UTF8_END) {
+      PRINT_ERROR(src, "unterminated string");
+      return FAILED;
+    }
+
+    return OK;
+  case '{':
+  case '}':
+    PRINT_ERROR(src,
+                "lists delimited by curly braces '{}' are not supported yet");
+    return FAILED;
+  case UTF8_ERROR:
+    PRINT_ERROR(src, "utf-8 encoding error");
+    return FAILED;
+  default:
+    token->length = 0L;
+    do {
+      if (cur == UTF8_ERROR) {
+        PRINT_ERROR(src, "utf-8 encoding error");
+        return FAILED;
+      }
+
+      token->length += utf8_cp_size(cur);
+      if (strchr(":<([{}])>", src->nxt_cp) != NULL || isspace(src->nxt_cp)) {
+        break;
+      }
+    } while ((cur = avoc_source_fwd(src)) != UTF8_END);
+
+    const char *str_start = (const char *)src->buf_data + token->offset;
+    const size_t str_len = token->length;
+    if (str_len >= 1) {
+      if ((strncmp("false", str_start, 5) == 0 && str_len == 5) ||
+          (strncmp("true", str_start, 4) == 0 && str_len == 4)) {
+        token->type = TOKEN_LIT_BOL;
+        return OK;
+      }
+
+      if (strncmp("nil", str_start, 3) == 0 && str_len == 3) {
+        token->type = TOKEN_NIL;
+        return OK;
+      }
+
+      if (isdigit(str_start[0]) ||
+          (str_len > 2 && strncmp("0x", str_start, 2) == 0) ||
+          (str_len > 2 && strncmp("0b", str_start, 2) == 0) ||
+          (str_len > 2 && strncmp("0o", str_start, 2) == 0) ||
+          (str_len > 2 && strncmp("-.", str_start, 2) == 0 &&
+           isdigit(str_start[2])) ||
+          (str_len > 1 && (str_start[0] == '.' || str_start[0] == '-') &&
+           isdigit(str_start[1]))) {
+        token->type = TOKEN_LIT_NUM;
+        return OK;
+      }
+    }
+
+    token->type = TOKEN_ID;
+    break;
   }
 
   return OK;
@@ -475,7 +479,7 @@ avoc_status avoc_next_token(avoc_source *src, avoc_token *token) {
 void avoc_list_push(avoc_list *dest, avoc_item *item) {
   assert(dest != NULL);
   assert(item != NULL);
-  dest->item_count ++;
+  dest->item_count++;
 
   if (dest->head == NULL) {
     dest->head = item;
@@ -503,13 +507,15 @@ void avoc_list_merge(avoc_list *left, avoc_list *right) {
   }
 }
 
-avoc_status avoc_parse_lit(avoc_source *src, avoc_token *token, avoc_item *item) {
+avoc_status avoc_parse_lit(avoc_source *src, avoc_token *token,
+                           avoc_item *item) {
   assert(src != NULL);
   assert(token != NULL);
   assert(item != NULL);
-  assert((token->type >= TOKEN_LIT_NUM && token->type <= TOKEN_LIT_BOL) || token->type == TOKEN_LIST_S || token->type == TOKEN_NIL);
+  assert((token->type >= TOKEN_LIT_NUM && token->type <= TOKEN_LIT_BOL) ||
+         token->type == TOKEN_LIST_S || token->type == TOKEN_NIL);
 
-  const char *contents = (const char *) src->buf_data + token->offset;
+  const char *contents = (const char *)src->buf_data + token->offset;
   size_t contents_len = token->length;
   char *contents_cpy = NULL;
 
@@ -577,7 +583,8 @@ avoc_status avoc_parse_lit(avoc_source *src, avoc_token *token, avoc_item *item)
         }
       }
 
-      if ((digit == 'i' || digit == 'f' || digit == 'u') && (i + 2) < contents_len) {
+      if ((digit == 'i' || digit == 'f' || digit == 'u') &&
+          (i + 2) < contents_len) {
         const char *suffix = contents + i;
         if (strncmp("i32", suffix, 3) == 0) {
           if (is_float) {
@@ -660,7 +667,8 @@ avoc_status avoc_parse_lit(avoc_source *src, avoc_token *token, avoc_item *item)
     }
 
     if (contents_len == 0) {
-      PRINT_ERROR(src, "numeric literal is incomplete, does not contain any digits");
+      PRINT_ERROR(src,
+                  "numeric literal is incomplete, does not contain any digits");
       return FAILED;
     }
 
@@ -668,46 +676,46 @@ avoc_status avoc_parse_lit(avoc_source *src, avoc_token *token, avoc_item *item)
       item->type = ITEM_LIT_F32;
     }
 
-    contents_cpy = calloc(contents_len+1, sizeof(char));
-    memset(contents_cpy, 0L, contents_len+1);
+    contents_cpy = calloc(contents_len + 1, sizeof(char));
+    memset(contents_cpy, 0L, contents_len + 1);
     memcpy(contents_cpy, contents, contents_len);
 
     switch (item->type) {
-      case ITEM_LIT_I32:
-        item->as_i32 = (int) strtol(contents_cpy, NULL, bases[num_base]);
-        item->as_i32 = is_neg ? -item->as_i32 : item->as_i32;
-        break;
-      case ITEM_LIT_I64:
-        item->as_i64 = strtol(contents_cpy, NULL, bases[num_base]);
-        item->as_i64 = is_neg ? -item->as_i64 : item->as_i64;
-        break;
-      case ITEM_LIT_U32:
-        item->as_u32 = (unsigned) strtoul(contents_cpy, NULL, bases[num_base]);
-        break;
-      case ITEM_LIT_U64:
-        item->as_u64 = strtoul(contents_cpy, NULL, bases[num_base]);
-        break;
-      case ITEM_LIT_F32:
-        item->as_f32 = strtof(contents_cpy, NULL);
-        item->as_f32 = is_neg ? -item->as_f32 : item->as_f32;
-        break;
-      case ITEM_LIT_F64:
-        item->as_f64 = strtod(contents_cpy, NULL);
-        item->as_f64 = is_neg ? -item->as_f64 : item->as_f64;
-        break;
-      default:
-        free(contents_cpy);
-        assert(0 && "unexpected literal type");
-        return FAILED;
+    case ITEM_LIT_I32:
+      item->as_i32 = (int)strtol(contents_cpy, NULL, bases[num_base]);
+      item->as_i32 = is_neg ? -item->as_i32 : item->as_i32;
+      break;
+    case ITEM_LIT_I64:
+      item->as_i64 = strtol(contents_cpy, NULL, bases[num_base]);
+      item->as_i64 = is_neg ? -item->as_i64 : item->as_i64;
+      break;
+    case ITEM_LIT_U32:
+      item->as_u32 = (unsigned)strtoul(contents_cpy, NULL, bases[num_base]);
+      break;
+    case ITEM_LIT_U64:
+      item->as_u64 = strtoul(contents_cpy, NULL, bases[num_base]);
+      break;
+    case ITEM_LIT_F32:
+      item->as_f32 = strtof(contents_cpy, NULL);
+      item->as_f32 = is_neg ? -item->as_f32 : item->as_f32;
+      break;
+    case ITEM_LIT_F64:
+      item->as_f64 = strtod(contents_cpy, NULL);
+      item->as_f64 = is_neg ? -item->as_f64 : item->as_f64;
+      break;
+    default:
+      free(contents_cpy);
+      assert(0 && "unexpected literal type");
+      return FAILED;
     }
 
     free(contents_cpy);
     return avoc_next_token(src, token);
   } else if (token->type == TOKEN_LIT_STR) {
     item->type = ITEM_LIT_STR;
-    contents_cpy = calloc(token->auxlen+1, sizeof(char));
+    contents_cpy = calloc(token->auxlen + 1, sizeof(char));
 
-    for (size_t i = 1, j = 0; i<token->length-1; i++, j++) {
+    for (size_t i = 1, j = 0; i < token->length - 1; i++, j++) {
       int peek = contents[i];
       int mask = peek & 0xFF;
       int skip = 0;
@@ -715,57 +723,57 @@ avoc_status avoc_parse_lit(avoc_source *src, avoc_token *token, avoc_item *item)
       if ((mask & 0x80) == 0) {
         skip = 0;
 
-        if (peek == '\\' && i<token->length-2 && contents[0] != '`') {
+        if (peek == '\\' && i < token->length - 2 && contents[0] != '`') {
           peek = contents[++i];
           char codebuf[9] = "\0\0\0\0\0\0\0\0\0";
           int ch = 0;
           int take = 0;
 
-          switch(peek) {
-             case 'e':
-             case '\\':
-                ch = '\\';
-                break;
-              case 'a':
-                ch = '\a';
-                break;
-              case 'b':
-                ch = '\b';
-                break;
-              case 'f':
-                ch = '\f';
-                break;
-              case 'n':
-                ch = '\n';
-                break;
-              case 'r':
-                ch = '\r';
-                break;
-              case 't':
-                ch = '\t';
-                break;
-              case 'v':
-                ch = '\v';
-                break;
-              case '"':
-                ch = '"';
-                break;
-              case '\'':
-                ch = '\'';
-                break;
-              case 'x':
-                take = 2;
-                break;
-              case 'u':
-                take = 4;
-                break;
-              case 'U':
-                take = 8;
-                break;
-              default:
-                PRINT_ERROR(src, "unknown escape sequence");
-                free(contents_cpy);
-                return FAILED;
+          switch (peek) {
+          case 'e':
+          case '\\':
+            ch = '\\';
+            break;
+          case 'a':
+            ch = '\a';
+            break;
+          case 'b':
+            ch = '\b';
+            break;
+          case 'f':
+            ch = '\f';
+            break;
+          case 'n':
+            ch = '\n';
+            break;
+          case 'r':
+            ch = '\r';
+            break;
+          case 't':
+            ch = '\t';
+            break;
+          case 'v':
+            ch = '\v';
+            break;
+          case '"':
+            ch = '"';
+            break;
+          case '\'':
+            ch = '\'';
+            break;
+          case 'x':
+            take = 2;
+            break;
+          case 'u':
+            take = 4;
+            break;
+          case 'U':
+            take = 8;
+            break;
+          default:
+            PRINT_ERROR(src, "unknown escape sequence");
+            free(contents_cpy);
+            return FAILED;
           }
 
           if (take > 0) {
@@ -776,7 +784,7 @@ avoc_status avoc_parse_lit(avoc_source *src, avoc_token *token, avoc_item *item)
             ch = strtol(codebuf, NULL, 16);
           }
 
-          int cp_size = utf8_encode(contents_cpy+j, ch);
+          int cp_size = utf8_encode(contents_cpy + j, ch);
           j += cp_size - 1;
           continue;
         } else if (peek == '\\' && contents[0] != '`') {
@@ -797,7 +805,7 @@ avoc_status avoc_parse_lit(avoc_source *src, avoc_token *token, avoc_item *item)
       }
 
       contents_cpy[j] = contents[i];
-      for (int k=0;k<skip;k++) {
+      for (int k = 0; k < skip; k++) {
         i++;
         contents_cpy[k] = contents[i];
       }
@@ -819,7 +827,8 @@ avoc_status avoc_parse_lit(avoc_source *src, avoc_token *token, avoc_item *item)
   return FAILED;
 }
 
-avoc_status avoc_parse_sym(avoc_source *src, avoc_token *token, avoc_item *item) {
+avoc_status avoc_parse_sym(avoc_source *src, avoc_token *token,
+                           avoc_item *item) {
   assert(src != NULL);
   assert(token != NULL);
   assert(item != NULL);
@@ -827,8 +836,8 @@ avoc_status avoc_parse_sym(avoc_source *src, avoc_token *token, avoc_item *item)
   avoc_status status = OK;
 
   item->type = ITEM_SYM;
-  item->as_sym = calloc(token->type, sizeof(char)+1);
-  memset(item->as_sym, 0L, token->length+1);
+  item->as_sym = calloc(token->type, sizeof(char) + 1);
+  memset(item->as_sym, 0L, token->length + 1);
   memcpy(item->as_sym, src->buf_data + token->offset, token->length);
 
   status = avoc_next_token(src, token);
@@ -845,13 +854,15 @@ avoc_status avoc_parse_sym(avoc_source *src, avoc_token *token, avoc_item *item)
     } while (token->type == TOKEN_EOL || token->type == TOKEN_COMMENT);
 
     if (token->type == TOKEN_ID) {
-      item->sym_ordinary_type = calloc(token->length+1, sizeof(char));
-      memset(item->sym_ordinary_type, 0L, token->length+1);
-      memcpy(item->sym_ordinary_type, src->buf_data + token->offset, token->length);
+      item->sym_ordinary_type = calloc(token->length + 1, sizeof(char));
+      memset(item->sym_ordinary_type, 0L, token->length + 1);
+      memcpy(item->sym_ordinary_type, src->buf_data + token->offset,
+             token->length);
     } else if (token->type == TOKEN_CALL_S) {
       item->sym_composed_type = malloc(sizeof(avoc_list));
       avoc_list_init(item->sym_composed_type);
-      status = avoc_parse_list(src, token, item->sym_composed_type, TOKEN_CALL_E);
+      status =
+          avoc_parse_list(src, token, item->sym_composed_type, TOKEN_CALL_E);
       if (status != OK) {
         free(item->sym_composed_type);
         return status;
@@ -872,61 +883,63 @@ avoc_status avoc_parse_sym(avoc_source *src, avoc_token *token, avoc_item *item)
 }
 
 avoc_status avoc_parse_comment(avoc_source *src, avoc_token *token,
-                           avoc_item *item) {
+                               avoc_item *item) {
   assert(src != NULL);
   assert(token != NULL);
   assert(item != NULL);
 
   item->type = ITEM_COMMENT;
-  item->as_str = calloc(token->length, sizeof(char)+1);
-  memset(item->as_str, 0L, token->length+1);
+  item->as_str = calloc(token->length, sizeof(char) + 1);
+  memset(item->as_str, 0L, token->length + 1);
   memcpy(item->as_str, src->buf_data + token->offset, token->length);
   return OK;
 }
 
-avoc_status avoc_parse_item(avoc_source *src, avoc_token *token, avoc_item *item) {
+avoc_status avoc_parse_item(avoc_source *src, avoc_token *token,
+                            avoc_item *item) {
   assert(src != NULL);
   assert(token != NULL);
   assert(item != NULL);
   avoc_status status = OK;
 
   switch (token->type) {
-    case TOKEN_ID:
-      status = avoc_parse_sym(src, token, item);
-      break;
-    case TOKEN_CALL_S:
-      item->as_list = malloc(sizeof(avoc_list));
-      item->type = ITEM_CALL;
-      avoc_list_init(item->as_list);
-      status = avoc_parse_list(src, token, item->as_list, TOKEN_CALL_E);
-      break;
-    case TOKEN_COMMENT:
-      status = avoc_parse_comment(src, token, item);
-      if (status != OK) {
-        return OK;
-      }
+  case TOKEN_ID:
+    status = avoc_parse_sym(src, token, item);
+    break;
+  case TOKEN_CALL_S:
+    item->as_list = malloc(sizeof(avoc_list));
+    item->type = ITEM_CALL;
+    avoc_list_init(item->as_list);
+    status = avoc_parse_list(src, token, item->as_list, TOKEN_CALL_E);
+    break;
+  case TOKEN_COMMENT:
+    status = avoc_parse_comment(src, token, item);
+    if (status != OK) {
+      return OK;
+    }
 
-      status = avoc_next_token(src, token);
-      break;
-    case TOKEN_NIL:
-    case TOKEN_LIT_STR:
-    case TOKEN_LIT_NUM:
-    case TOKEN_LIT_BOL:
-    case TOKEN_LIST_S:
-      status = avoc_parse_lit(src, token, item);
-      if (status != OK) {
-        return status;
-      }
+    status = avoc_next_token(src, token);
+    break;
+  case TOKEN_NIL:
+  case TOKEN_LIT_STR:
+  case TOKEN_LIT_NUM:
+  case TOKEN_LIT_BOL:
+  case TOKEN_LIST_S:
+    status = avoc_parse_lit(src, token, item);
+    if (status != OK) {
+      return status;
+    }
 
-      break;
-    default:
-      return FAILED;
+    break;
+  default:
+    return FAILED;
   }
 
   return status;
 }
 
-avoc_status avoc_parse_list(avoc_source *src, avoc_token *token, avoc_list *list, avoc_token_type term) {
+avoc_status avoc_parse_list(avoc_source *src, avoc_token *token,
+                            avoc_list *list, avoc_token_type term) {
   assert(src != NULL);
   assert(token != NULL);
   assert(list != NULL);
