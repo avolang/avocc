@@ -60,6 +60,19 @@ void avoc_list_init(avoc_list *list) {
   list->item_count = 0L;
 }
 
+void avoc_scope_init(avoc_scope *scope) {
+  assert(scope != NULL);
+  scope->parent = NULL;
+  scope->symbols = NULL;
+}
+
+void avoc_scope_free(avoc_scope *scope) {
+  assert(scope != NULL);
+  if (scope->symbols != NULL) {
+    avoc_list_free(scope->symbols);
+  }
+}
+
 void avoc_source_free(avoc_source *src) {
   assert(src != NULL);
 
@@ -1028,4 +1041,96 @@ avoc_status avoc_parse_source(avoc_source *src, avoc_list *list) {
   }
 
   return OK;
+}
+
+avoc_status avoc_scope_push_symbol(avoc_scope *scope, const char *name,
+                                   const char *tyid, avoc_item **item) {
+  assert(scope != NULL);
+  assert(name != NULL);
+  assert(item != NULL);
+  avoc_status status;
+
+  avoc_item *previous = NULL;
+  status = avoc_scope_find_symbol(scope, 0, name, tyid, &previous);
+  if (status == OK) {
+    return FAILED;
+  }
+
+  if (scope->symbols == NULL) {
+    scope->symbols = malloc(sizeof(avoc_list));
+    avoc_list_init(scope->symbols);
+  }
+
+  avoc_list *cell = malloc(sizeof(avoc_list));
+  avoc_list_init(cell);
+
+  avoc_item *name_item = malloc(sizeof(avoc_item));
+  avoc_item_init(name_item);
+  name_item->type = ITEM_LIT_STR;
+  name_item->as_str = malloc(strlen(name) + 1);
+  memcpy(name_item->as_str, name, strlen(name) + 1);
+  avoc_list_push(cell, name_item);
+
+  avoc_item *tyid_item = malloc(sizeof(avoc_item));
+  avoc_item_init(tyid_item);
+  tyid_item->type = ITEM_LIT_STR;
+  tyid_item->as_str = malloc(strlen(tyid) + 1);
+  memcpy(tyid_item->as_str, tyid, strlen(tyid) + 1);
+  avoc_list_push(cell, tyid_item);
+
+  *item = malloc(sizeof(avoc_item));
+  avoc_item_init(*item);
+  (*item)->type = ITEM_LIT_LST;
+  (*item)->as_list = cell;
+  avoc_list_push(scope->symbols, *item);
+  return OK;
+}
+
+avoc_status avoc_scope_find_symbol(avoc_scope *scope, int walkup,
+                                   const char *name, const char *tyid,
+                                   avoc_item **item) {
+  assert(scope != NULL);
+  assert(walkup == 0 || walkup == 1);
+  assert(name != NULL);
+  assert(item != NULL);
+
+  if (scope->symbols == NULL) {
+    return FAILED;
+  }
+
+  avoc_list *syms = scope->symbols;
+  avoc_item *cur = syms->head;
+  while (cur != NULL) {
+    assert(cur->type == ITEM_LIT_LST);
+
+    avoc_list *cell = cur->as_list;
+    avoc_item *name_item = cell->head;
+    assert(name_item != NULL);
+
+    avoc_item *tyid_item = name_item->next_sibling;
+    assert(tyid_item != NULL);
+
+    if (strncmp(name_item->as_str, name, strlen(name)) == 0 &&
+        (strncmp(tyid_item->as_str, tyid, strlen(tyid)) == 0 || tyid == NULL)) {
+
+      *item = cur;
+      return OK;
+    }
+
+    cur = cur->next_sibling;
+  }
+
+  return FAILED;
+}
+
+void avoc_scope_builtin_populate(avoc_scope *scope) {
+  assert(scope != NULL);
+  avoc_item *item = NULL;
+  static char *primitives[] = {"nil", "bol", "i8",   "i16",        "i32",
+                               "i64", "u8",  "u16",  "u32",        "u64",
+                               "f32", "f64", "byte", "byte-chain", NULL};
+  char *prim = primitives[0];
+  while (prim++ != NULL) {
+    avoc_scope_push_symbol(scope, prim, "%primitive", &item);
+  }
 }

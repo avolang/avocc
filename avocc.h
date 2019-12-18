@@ -51,6 +51,7 @@ typedef struct _avoc_token {
 } avoc_token;
 
 struct _avoc_list;
+struct _avoc_scope;
 
 typedef struct _avoc_item {
   enum {
@@ -94,10 +95,20 @@ typedef struct _avoc_item {
 } avoc_item;
 
 typedef struct _avoc_list {
+  struct _avoc_scope *scope;
   struct _avoc_item *head;
   struct _avoc_item *tail;
   size_t item_count;
 } avoc_list;
+
+typedef struct _avoc_scope {
+  struct _avoc_scope *parent;
+  struct _avoc_list *symbols;
+  // Symbol layout (each item is a list):
+  //  First Item: Name
+  //  Second Item: Type
+  //  Following Items: Params
+} avoc_scope;
 
 __attribute__((unused)) static const char *token_type_names[] = {
     "EOF",          "EOL",          "COLON",   "TOKEN_LIST_S", "TOKEN_LIST_E",
@@ -182,5 +193,32 @@ avoc_status avoc_parse_list(avoc_source *src, avoc_token *token,
 
 // Parse a source.
 avoc_status avoc_parse_source(avoc_source *src, avoc_list *list);
+
+// Sets all scope values to zero.
+void avoc_scope_init(avoc_scope *scope);
+
+// Free the memory of a scope.
+void avoc_scope_free(avoc_scope *scope);
+
+// Pushes a new symbol into the scope, out: item.
+// Return FAILED when item is already on the scope.
+avoc_status avoc_scope_push_symbol(avoc_scope *scope, const char *name,
+                                   const char *tyid, avoc_item **item);
+
+// Finds a symbol in the given scope.
+//  @param scope - Scope where to look at
+//  @param walkup - find on current and parent scopes, leave as 0 to look only
+//  on current scope
+//  @param name - name of the symbol
+//  @param tyid - filter by type name, leave null if unknown
+//  @param item (out) - pointer to the item, if not found null
+//
+// Returns OK if found, FAILED otherwise.
+avoc_status avoc_scope_find_symbol(avoc_scope *scope, int walkup,
+                                   const char *name, const char *tyid,
+                                   avoc_item **item);
+
+// Inserts the builtin symbols into a scope.
+void avoc_scope_builtin_populate(avoc_scope *scope);
 
 #endif /* AVOCC_H */
