@@ -28,7 +28,6 @@ LIT -> BOL
 LIT -> LST
 
 ISQ -> ISQ ITM
-ISQ -> ESQ ISQ
 ISQ -> ITM
 ISQ -> KWI
 LST -> [ ISQ ]
